@@ -1,6 +1,6 @@
 class: center, middle
 
-# PEP 582 Package Manager
+# PEP 582 包管理器
 
 <h3 class="fa fa-github"> frostming</h3>
 
@@ -9,23 +9,23 @@ class: left, middle
 
 # Agenda
 
-1. Introduction to PEP 582
-2. PDM - A modern package manager supporting PEP 582
-3. Build a Python package manager scratch
+1. PEP 582 简介
+2. PDM - 一个支持 PEP 582 的包管理器
+3. 从零开始手撸一个包管理器
 
 ---
 
-# Introduction to PEP 582
+# PEP 582 简介
 
 ![](assets/images/pep582.png)
 
 ---
 
-# Introduction to PEP 582
+# PEP 582 简介
 
-Folder structure
+文件结构
 
-```
+```bash
 myproject
 *├── __pypackages__
 │   └── 3.8
@@ -34,20 +34,87 @@ myproject
 └── myscript.py
 ```
 
-When executing `python myproject/myscript.py`, `myproject/__pypackages__/3.8/lib` will be loaded as library root.
+当执行 `python myproject/myscript.py` 时, `myproject/__pypackages__/3.8/lib` 会自动加载到 `sys.path` 中。
 
 ---
-# Difference from venv
+# 与虚拟环境的比较
 
 ![](assets/images/venv-structure.png)
 
-A venv is bound with a Python interpreter. When the original interpreter is gone, the venv becomes stale.
+每个虚拟环境都绑定了一个 Python 解释器，当这个解释器对应的路径被删除、替换，则此虚拟变为不可用。
+
+**灵魂拷问：我们真的需要在一个隔离的环境中放一个解释器吗？**
 
 ---
-# Difference from venv
+# 与虚拟环境的比较
 
 ![](assets/images/pep582-structure.png)
 
-Decoupled the isolated environments(packages directory) with Python interpreter.
+* 把解释器从环境中解放出来
+* 一个隔离环境应该仅仅是依赖包的隔离，只要是同版本的 Python 都能使用
 
-**Do we really need a Python interpreter inside isolated environment?**
+---
+# PDM 是如何实现 PEP 582 的
+
+![](assets/images/inject-pythonpath.png)
+
+```python
+import sys
+print(sys.path)
+[
+    '',
+    '/path/to/myproject/__pypackages__/3.8/lib',
+    '/Users/fming/Library/PythonUp/versions/3.8/lib/python38.zip',
+    '/Users/fming/Library/PythonUp/versions/3.8/lib/python3.8',
+    '/Users/fming/Library/PythonUp/versions/3.8/lib/python3.8/lib-dynload',
+*   '/Users/fming/Library/PythonUp/versions/3.8/lib/python3.8/site-packages',
+*   '/Users/fming/.local/lib/python3.8/site-packages',
+]
+```
+---
+## 去除 `site-packages`
+
+```bash
+myproject
+├── __pypackages__
+│   └── 3.8
+│       └── lib
+*│           ├── site.py
+│           └── ...
+└── myscript.py
+```
+```python
+# site.py
+for item in sys.path:
+    if "site-packages" in item:
+        continue
+    new_path.append(item)
+sys.path[:] = new_path
+```
+`site.py`将在 Python 启动时自动执行，`site.py`必须在搜索路径中优先于`lib/site.py`.
+
+---
+class: middle
+
+```python
+import sys
+print(sys.path)
+[
+    '',
+    '/path/to/myproject/__pypackages__/3.8/lib',
+    '/Users/fming/Library/PythonUp/versions/3.8/lib/python38.zip',
+    '/Users/fming/Library/PythonUp/versions/3.8/lib/python3.8',
+    '/Users/fming/Library/PythonUp/versions/3.8/lib/python3.8/lib-dynload',
+]
+```
+
+---
+class: middle, center
+
+# Demo Time!
+---
+# 从零开始手撸包管理器
+
+包管理器中需要用到的model
+
+![](assets/images/pm-models.png)
