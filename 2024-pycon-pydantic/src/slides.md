@@ -55,7 +55,7 @@ The last comment block of each slide will be treated as slide notes. It will be 
 
 ---
 layout: image-right
-image: '/images/bentoml.png'
+image: './images/bentoml.png'
 ---
 
 # About Myself
@@ -805,7 +805,7 @@ align: rm-lm
 
 ---
 layout: image-right
-image: /images/webui.png
+image: ./images/webui.png
 ---
 
 # Bonus: 生成 Web UI
