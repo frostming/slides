@@ -1,6 +1,6 @@
 {
+  "name": "pycon-pydantic",
   "type": "module",
-  "version": "0.0.0",
   "private": true,
   "scripts": {
     "dev": "slidev",
@@ -8,8 +8,10 @@
     "export": "slidev export --per-slide --dark --output ../slides.pdf"
   },
   "dependencies": {
-    "@slidev/theme-seriph": "^0.25.0",
-    "seedrandom": "^3.0.5",
-    "vue": "^3.4.0"
+    "@slidev/cli": "^0.50.0-beta.5",
+    "@slidev/theme-default": "latest",
+    "@slidev/theme-seriph": "latest",
+    "slidev-theme-neversink": "^0.3.6",
+    "vue": "^3.5.12"
   }
 }
