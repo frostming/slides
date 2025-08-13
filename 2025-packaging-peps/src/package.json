@@ -8,6 +8,7 @@
     "export": "slidev export --per-slide --dark --output ../slides.pdf"
   },
   "dependencies": {
+    "@slidev/theme-apple-basic": "^0.25.1",
     "@slidev/theme-seriph": "^0.25.0",
     "seedrandom": "^3.0.5",
     "vue": "^3.4.0"

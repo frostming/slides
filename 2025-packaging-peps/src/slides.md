@@ -1,640 +1,444 @@
 ---
-# You can also start simply with 'default'
-theme: seriph
-
-# random image from a curated Unsplash collection by Anthony
-# like them? see https://unsplash.com/collections/94734566/slidev
-# background: https://cover.sli.dev
-
-# some information about your slides (markdown enabled)
-title: Welcome to Slidev
+theme: apple-basic
+# background: https://unsplash.com/photos/nGrfKmtwv24/download?force=true&w=1920
+highlighter: shiki
+lineNumbers: false
 info: |
-  ## Slidev Starter Template
-  Presentation slides for developers.
+  ## Python Packaging PEPs 闪电演讲
 
-  Learn more at [Sli.dev](https://sli.dev)
-# apply unocss classes to the current slide
+  Python 打包生态系统的最新进展
+title: Python Packaging PEPs
 class: text-center
-# https://sli.dev/features/drawing
 drawings:
   persist: false
-# slide transition: https://sli.dev/guide/animations.html#slide-transitions
 transition: slide-left
-# enable MDC Syntax: https://sli.dev/features/mdc
 mdc: true
 ---
 
-# Welcome to Slidev
+# Python Packaging PEPs
 
-Presentation slides for developers
+<div class="text-2xl text-gray-500 mt-2">
+打包生态系统的最新进展
+</div>
 
 <div class="pt-12">
   <span @click="$slidev.nav.next" class="px-2 py-1 rounded cursor-pointer" hover="bg-white bg-opacity-10">
-    Press Space for next page <carbon:arrow-right class="inline"/>
+    开始 <carbon:arrow-right class="inline"/>
   </span>
 </div>
 
-<div class="abs-br m-6 flex gap-2">
-  <button @click="$slidev.nav.openInEditor()" title="Open in Editor" class="text-xl slidev-icon-btn opacity-50 !border-none !hover:text-white">
-    <carbon:edit />
-  </button>
-  <a href="https://github.com/slidevjs/slidev" target="_blank" alt="GitHub" title="Open in GitHub"
-    class="text-xl slidev-icon-btn opacity-50 !border-none !hover:text-white">
-    <carbon-logo-github />
-  </a>
-</div>
-
 <!--
-The last comment block of each slide will be treated as slide notes. It will be visible and editable in Presenter Mode along with the slide. [Read more in the docs](https://sli.dev/guide/syntax.html#notes)
+这个演讲将介绍 Python 打包生态系统的最新 PEP 提案进展，包括已经完成、已接受和正在讨论的提案。
 -->
+
+---
+layout: intro
+class: pl-20
+---
+
+# 关于我
+
+<div class="my-10 grid grid-cols-[120px,1fr] gap-8">
+  <div>
+    <img src="https://github.com/frostming.png" class="rounded-full w-30 h-30" />
+  </div>
+  <div>
+    <div class="text-3xl font-bold">Frost Ming</div>
+    <div class="text-xl text-gray-500 mt-2">Python Developer · PyPA Member</div>
+    <div class="mt-4">
+      <div>🛠️ PDM 作者 - 现代 Python 包管理器</div>
+      <div>📦 Python 打包生态贡献者</div>
+      <div>✨ 开源项目：Unearth, Marko, Monas</div>
+    </div>
+    <div class="mt-4 flex gap-4 text-sm">
+      <a href="https://github.com/frostming" target="_blank" class="text-blue-500">
+        <carbon:logo-github class="inline mr-1"/> @frostming
+      </a>
+      <a href="https://frostming.com" target="_blank" class="text-blue-500">
+        <carbon:blog class="inline mr-1"/> frostming.com
+      </a>
+      <a href="https://mas.to/@frostming" target="_blank" class="text-blue-500">
+        <carbon:logo-mastodon class="inline mr-1"/> mas.to@frostming
+      </a>
+    </div>
+  </div>
+</div>
 
 ---
 transition: fade-out
 ---
 
-# What is Slidev?
+# 什么是 PEP？
 
-Slidev is a slides maker and presenter designed for developers, consist of the following features
-
-- 📝 **Text-based** - focus on the content with Markdown, and then style them later
-- 🎨 **Themable** - themes can be shared and re-used as npm packages
-- 🧑‍💻 **Developer Friendly** - code highlighting, live coding with autocompletion
-- 🤹 **Interactive** - embed Vue components to enhance your expressions
-- 🎥 **Recording** - built-in recording and camera view
-- 📤 **Portable** - export to PDF, PPTX, PNGs, or even a hostable SPA
-- 🛠 **Hackable** - virtually anything that's possible on a webpage is possible in Slidev
-<br>
-<br>
-
-Read more about [Why Slidev?](https://sli.dev/guide/why)
-
-<!--
-You can have `style` tag in markdown to override the style for the current page.
-Learn more: https://sli.dev/features/slide-scope-style
--->
-
-<style>
-h1 {
-  background-color: #2B90B6;
-  background-image: linear-gradient(45deg, #4EC5D4 10%, #146b8c 20%);
-  background-size: 100%;
-  -webkit-background-clip: text;
-  -moz-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  -moz-text-fill-color: transparent;
-}
-</style>
-
-<!--
-Here is another comment.
--->
-
----
-transition: slide-up
-level: 2
----
-
-# Navigation
-
-Hover on the bottom-left corner to see the navigation's controls panel, [learn more](https://sli.dev/guide/navigation.html)
-
-## Keyboard Shortcuts
-
-|                                                     |                             |
-| --------------------------------------------------- | --------------------------- |
-| <kbd>right</kbd> / <kbd>space</kbd>                 | next animation or slide     |
-| <kbd>left</kbd>  / <kbd>shift</kbd><kbd>space</kbd> | previous animation or slide |
-| <kbd>up</kbd>                                       | previous slide              |
-| <kbd>down</kbd>                                     | next slide                  |
-
-<!-- https://sli.dev/guide/animations.html#click-animation -->
-<img
-  v-click
-  class="absolute -bottom-9 -left-7 w-80 opacity-50"
-  src="https://sli.dev/assets/arrow-bottom-left.svg"
-  alt=""
-/>
-<p v-after class="absolute bottom-23 left-45 opacity-30 transform -rotate-10">Here!</p>
-
----
-layout: two-cols
-layoutClass: gap-16
----
-
-# Table of contents
-
-You can use the `Toc` component to generate a table of contents for your slides:
-
-```html
-<Toc minDepth="1" maxDepth="1"></Toc>
-```
-
-The title will be inferred from your slide content, or you can override it with `title` and `level` in your frontmatter.
-
-::right::
-
-<Toc v-click minDepth="1" maxDepth="2"></Toc>
-
----
-layout: image-right
-image: https://cover.sli.dev
----
-
-# Code
-
-Use code snippets and get the highlighting directly, and even types hover![^1]
-
-```ts {all|5|7|7-8|10|all} twoslash
-// TwoSlash enables TypeScript hover information
-// and errors in markdown code blocks
-// More at https://shiki.style/packages/twoslash
-
-import { computed, ref } from 'vue'
-
-const count = ref(0)
-const doubled = computed(() => count.value * 2)
-
-doubled.value = 2
-```
-
-<arrow v-click="[4, 5]" x1="350" y1="310" x2="195" y2="334" color="#953" width="2" arrowSize="1" />
-
-<!-- This allow you to embed external code blocks -->
-<<< @/snippets/external.ts#snippet
-
-<!-- Footer -->
-[^1]: [Learn More](https://sli.dev/guide/line-highlighting)
-
-<!-- Inline style -->
-<style>
-.footnotes-sep {
-  @apply mt-5 opacity-10;
-}
-.footnotes {
-  @apply text-sm opacity-75;
-}
-.footnote-backref {
-  display: none;
-}
-</style>
-
-<!--
-Notes can also sync with clicks
-
-[click] This will be highlighted after the first click
-
-[click] Highlighted with `count = ref(0)`
-
-[click:3] Last click (skip two clicks)
--->
-
----
-level: 2
----
-
-# Shiki Magic Move
-
-Powered by [shiki-magic-move](https://shiki-magic-move.netlify.app/), Slidev supports animations across multiple code snippets.
-
-Add multiple code blocks and wrap them with <code>````md magic-move</code> (four backticks) to enable the magic move. For example:
-
-````md magic-move {lines: true}
-```ts {*|2|*}
-// step 1
-const author = reactive({
-  name: 'John Doe',
-  books: [
-    'Vue 2 - Advanced Guide',
-    'Vue 3 - Basic Guide',
-    'Vue 4 - The Mystery'
-  ]
-})
-```
-
-```ts {*|1-2|3-4|3-4,8}
-// step 2
-export default {
-  data() {
-    return {
-      author: {
-        name: 'John Doe',
-        books: [
-          'Vue 2 - Advanced Guide',
-          'Vue 3 - Basic Guide',
-          'Vue 4 - The Mystery'
-        ]
-      }
-    }
-  }
-}
-```
-
-```ts
-// step 3
-export default {
-  data: () => ({
-    author: {
-      name: 'John Doe',
-      books: [
-        'Vue 2 - Advanced Guide',
-        'Vue 3 - Basic Guide',
-        'Vue 4 - The Mystery'
-      ]
-    }
-  })
-}
-```
-
-Non-code blocks are ignored.
-
-```vue
-<!-- step 4 -->
-<script setup>
-const author = {
-  name: 'John Doe',
-  books: [
-    'Vue 2 - Advanced Guide',
-    'Vue 3 - Basic Guide',
-    'Vue 4 - The Mystery'
-  ]
-}
-</script>
-```
-````
-
----
-
-# Components
-
-<div grid="~ cols-2 gap-4">
+<div class="grid grid-cols-2 gap-8 mt-8">
 <div>
 
-You can use Vue components directly inside your slides.
+### Python Enhancement Proposal
 
-We have provided a few built-in components like `<Tweet/>` and `<Youtube/>` that you can use directly. And adding your custom components is also super easy.
-
-```html
-<Counter :count="10" />
-```
-
-<!-- ./components/Counter.vue -->
-<Counter :count="10" m="t-4" />
-
-Check out [the guides](https://sli.dev/builtin/components.html) for more.
+- Python 改进提案
+- 描述新特性或流程的技术规范
+- 社区驱动的决策过程
+- 推动 Python 生态系统演进
 
 </div>
 <div>
 
-```html
-<Tweet id="1390115482657726468" />
-```
+### 打包相关的 PEP
 
-<Tweet id="1390115482657726468" scale="0.65" />
+- 定义打包标准和规范
+- 改进依赖管理
+- 提升用户体验
+- 促进工具互操作性
 
 </div>
+</div>
+
+---
+layout: section
+---
+
+# 已完成的 PEP
+## Final Status
+
+---
+
+# PEP 723：内联脚本元数据
+
+<div class="mt-6">
+
+```python {all|1-8|10-12}
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "requests",
+#   "rich",
+# ]
+# ///
+
+import requests
+from rich import print
+
+print(requests.get("https://api.github.com"))
+```
+
+### 主要特性
+
+- 在单文件脚本中声明依赖
+- 标准化的元数据格式
+- 工具可以自动处理依赖安装
+
 </div>
 
 <!--
-Presenter note with **bold**, *italic*, and ~~striked~~ text.
-
-Also, HTML elements are valid:
-<div class="flex w-full">
-  <span style="flex-grow: 1;">Left content</span>
-  <span>Right content</span>
-</div>
+PEP 723 允许在 Python 脚本文件中直接声明依赖关系，非常适合单文件脚本和快速原型开发。
 -->
 
 ---
-class: px-20
----
 
-# Themes
+# PEP 735：依赖组
 
-Slidev comes with powerful theming support. Themes can provide styles, layouts, components, or even configurations for tools. Switching between themes by just **one edit** in your frontmatter:
+<div class="mt-6">
 
-<div grid="~ cols-2 gap-2" m="t-2">
-
-```yaml
----
-theme: default
----
+```toml {all|2-4|6-8|10-13}
+[dependency-groups]
+test = [
+  "pytest>=7.0",
+  "pytest-cov",
+]
+docs = [
+  "sphinx>=5.0",
+  "sphinx-rtd-theme",
+]
+dev = [
+  { include-group = "test" },
+  { include-group = "docs" },
+  "pre-commit",
+]
 ```
 
-```yaml
----
-theme: seriph
----
-```
+### 优势
 
-<img border="rounded" src="https://github.com/slidevjs/themes/blob/main/screenshots/theme-default/01.png?raw=true" alt="">
-
-<img border="rounded" src="https://github.com/slidevjs/themes/blob/main/screenshots/theme-seriph/01.png?raw=true" alt="">
+- 标准化的依赖分组方式
+- 支持组合和继承
+- 替代各种工具特定的格式
 
 </div>
 
-Read more about [How to use a theme](https://sli.dev/themes/use.html) and
-check out the [Awesome Themes Gallery](https://sli.dev/themes/gallery.html).
+<!--
+PEP 735 在 pyproject.toml 中定义了标准的依赖组格式，统一了不同工具的依赖管理方式。
+-->
 
 ---
 
-# Clicks Animations
+# PEP 751：锁文件格式
 
-You can add `v-click` to elements to add a click animation.
+<div class="mt-4">
 
-<div v-click>
+```toml {all|1-5|7-13}
+[[packages]]
+name = "requests"
+version = "2.31.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "...", hash = "sha256:..." }
 
-This shows up when you click the slide:
+[[packages.wheels]]
+url = "..."
+hash = "sha256:..."
+tags = ["cp39-cp39-manylinux_2_17_x86_64"]
+requires-python = ">=3.7"
+dependencies = ["certifi", "charset-normalizer", "idna", "urllib3"]
+```
 
+### 特点
+
+- 记录精确的依赖版本
+- 包含完整的哈希值
+- 支持跨平台锁定
+- 确保可重现的安装
+
+</div>
+
+<!--
+PEP 751 定义了一个标准的锁文件格式，用于记录精确的依赖版本，确保在不同环境中的可重现安装。
+-->
+
+---
+layout: section
+---
+
+# 已接受的 PEP
+## Accepted Status
+
+---
+
+# PEP 658：简单 API 中的元数据
+
+<div class="mt-6">
+
+### 改进前
+```mermaid {scale: 0.8}
+graph LR
+    A[pip install] --> B[下载整个包]
+    B --> C[解压提取元数据]
+    C --> D[解析依赖]
+```
+
+### 改进后
+```mermaid {scale: 0.8}
+graph LR
+    A[pip install] --> B[直接获取元数据]
+    B --> C[解析依赖]
+    C --> D[仅下载需要的包]
+```
+
+<div class="mt-4 text-green-600">
+
+✅ 减少下载量
+✅ 加快依赖解析速度
+✅ 改善用户体验
+
+</div>
+
+</div>
+
+<!--
+PEP 658 允许包索引直接提供包的元数据，无需下载整个包文件，大大提升了依赖解析的效率。
+-->
+
+---
+
+# PEP 691：JSON 格式的简单 API
+
+<div class="grid grid-cols-2 gap-6 mt-6">
+<div>
+
+### HTML 格式（旧）
 ```html
-<div v-click>This shows up when you click the slide.</div>
+<a href="django-4.2.tar.gz">
+  django-4.2.tar.gz
+</a>
+<a href="django-4.2-py3-none-any.whl">
+  django-4.2-py3-none-any.whl
+</a>
 ```
 
 </div>
+<div>
 
-<br>
-
-<v-click>
-
-The <span v-mark.red="3"><code>v-mark</code> directive</span>
-also allows you to add
-<span v-mark.circle.orange="4">inline marks</span>
-, powered by [Rough Notation](https://roughnotation.com/):
-
-```html
-<span v-mark.underline.orange>inline markers</span>
-```
-
-</v-click>
-
-<div mt-20 v-click>
-
-[Learn More](https://sli.dev/guide/animations#click-animation)
-
-</div>
-
----
-
-# Motions
-
-Motion animations are powered by [@vueuse/motion](https://motion.vueuse.org/), triggered by `v-motion` directive.
-
-```html
-<div
-  v-motion
-  :initial="{ x: -80 }"
-  :enter="{ x: 0 }"
-  :click-3="{ x: 80 }"
-  :leave="{ x: 1000 }"
->
-  Slidev
-</div>
-```
-
-<div class="w-60 relative">
-  <div class="relative w-40 h-40">
-    <img
-      v-motion
-      :initial="{ x: 800, y: -100, scale: 1.5, rotate: -50 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-square.png"
-      alt=""
-    />
-    <img
-      v-motion
-      :initial="{ y: 500, x: -100, scale: 2 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-circle.png"
-      alt=""
-    />
-    <img
-      v-motion
-      :initial="{ x: 600, y: 400, scale: 2, rotate: 100 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-triangle.png"
-      alt=""
-    />
-  </div>
-
-  <div
-    class="text-5xl absolute top-14 left-40 text-[#2B90B6] -z-1"
-    v-motion
-    :initial="{ x: -80, opacity: 0}"
-    :enter="{ x: 0, opacity: 1, transition: { delay: 2000, duration: 1000 } }">
-    Slidev
-  </div>
-</div>
-
-<!-- vue script setup scripts can be directly used in markdown, and will only affects current page -->
-<script setup lang="ts">
-const final = {
-  x: 0,
-  y: 0,
-  rotate: 0,
-  scale: 1,
-  transition: {
-    type: 'spring',
-    damping: 10,
-    stiffness: 20,
-    mass: 2
-  }
+### JSON 格式（新）
+```json
+{
+  "files": [{
+    "filename": "django-4.2.tar.gz",
+    "url": "...",
+    "hashes": {"sha256": "..."},
+    "requires-python": ">=3.8",
+    "yanked": false
+  }]
 }
-</script>
+```
 
-<div
-  v-motion
-  :initial="{ x:35, y: 30, opacity: 0}"
-  :enter="{ y: 0, opacity: 1, transition: { delay: 3500 } }">
+</div>
+</div>
 
-[Learn More](https://sli.dev/guide/animations.html#motion)
+<div class="mt-6 text-center">
+
+**更结构化** · **更易解析** · **更多元数据**
 
 </div>
 
+<!--
+PEP 691 为 PyPI 简单 API 添加了 JSON 格式支持，使工具能够更容易地解析包信息。
+-->
+
+---
+layout: section
 ---
 
-# LaTeX
-
-LaTeX is supported out-of-box. Powered by [KaTeX](https://katex.org/).
-
-<div h-3 />
-
-Inline $\sqrt{3x-1}+(1+x)^2$
-
-Block
-$$ {1|3|all}
-\begin{aligned}
-\nabla \cdot \vec{E} &= \frac{\rho}{\varepsilon_0} \\
-\nabla \cdot \vec{B} &= 0 \\
-\nabla \times \vec{E} &= -\frac{\partial\vec{B}}{\partial t} \\
-\nabla \times \vec{B} &= \mu_0\vec{J} + \mu_0\varepsilon_0\frac{\partial\vec{E}}{\partial t}
-\end{aligned}
-$$
-
-[Learn more](https://sli.dev/features/latex)
+# 讨论中的 PEP
+## Under Discussion
 
 ---
 
-# Diagrams
+# PEP 771：默认额外依赖
 
-You can create diagrams / graphs from textual descriptions, directly in your Markdown.
+<div class="mt-6">
 
-<div class="grid grid-cols-4 gap-5 pt-4 -mb-6">
-
-```mermaid {scale: 0.5, alt: 'A simple sequence diagram'}
-sequenceDiagram
-    Alice->John: Hello John, how are you?
-    Note over Alice,John: A typical interaction
+```toml {all|2-5|7-9|11}
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "black",
+  "mypy",
+]
+docs = [
+  "sphinx",
+  "sphinx-rtd-theme",
+]
+default = ["dev", "docs"]  # 默认安装的额外依赖
 ```
 
-```mermaid {theme: 'neutral', scale: 0.8}
-graph TD
-B[Text] --> C{Decision}
-C -->|One| D[Result 1]
-C -->|Two| E[Result 2]
-```
+### 使用场景
 
-```mermaid
-mindmap
-  root((mindmap))
-    Origins
-      Long history
-      ::icon(fa fa-book)
-      Popularisation
-        British popular psychology author Tony Buzan
-    Research
-      On effectiveness<br/>and features
-      On Automatic creation
-        Uses
-            Creative techniques
-            Strategic planning
-            Argument mapping
-    Tools
-      Pen and paper
-      Mermaid
-```
+```bash
+# 安装包及其默认额外依赖
+pip install mypackage
 
-```plantuml {scale: 0.7}
-@startuml
-
-package "Some Group" {
-  HTTP - [First Component]
-  [Another Component]
-}
-
-node "Other Groups" {
-  FTP - [Second Component]
-  [First Component] --> FTP
-}
-
-cloud {
-  [Example 1]
-}
-
-database "MySql" {
-  folder "This is my folder" {
-    [Folder 3]
-  }
-  frame "Foo" {
-    [Frame 4]
-  }
-}
-
-[Another Component] --> [Example 1]
-[Example 1] --> [Folder 3]
-[Folder 3] --> [Frame 4]
-
-@enduml
+# 仅安装核心依赖
+pip install mypackage --only-required
 ```
 
 </div>
 
-Learn More: [Mermaid Diagrams](https://sli.dev/guide/features/mermaid) and [PlantUML Diagrams](https://sli.dev/guide/features/plantuml)
-
----
-foo: bar
-dragPos:
-  square: 691,32,167,_,-16
----
-
-# Draggable Elements
-
-Double-click on the draggable elements to edit their positions.
-
-<br>
-
-###### Directive Usage
-
-```md
-<img v-drag="'square'" src="https://sli.dev/logo.png">
-```
-
-<br>
-
-###### Component Usage
-
-```md
-<v-drag text-3xl>
-  <carbon:arrow-up />
-  Use the `v-drag` component to have a draggable container!
-</v-drag>
-```
-
-<v-drag pos="663,206,261,_,-15">
-  <div text-center text-3xl border border-main rounded>
-    Double-click me!
-  </div>
-</v-drag>
-
-<img v-drag="'square'" src="https://sli.dev/logo.png">
-
-###### Draggable Arrow
-
-```md
-<v-drag-arrow two-way />
-```
-
-<v-drag-arrow pos="67,452,253,46" two-way op70 />
-
----
-src: ./imported-slides.md
-hide: false
----
+<!--
+PEP 771 提议添加默认额外依赖的概念，让包维护者能够指定推荐安装的可选依赖。
+-->
 
 ---
 
-# Monaco Editor
+# PEP 794：导入名元数据
 
-Slidev provides built-in Monaco Editor support.
+<div class="mt-6">
 
-Add `{monaco}` to the code block to turn it into an editor:
+### 问题：包名 ≠ 导入名
 
-```ts {monaco}
-import { ref } from 'vue'
-import { emptyArray } from './external'
+<div class="grid grid-cols-3 gap-4 mt-4">
+<div class="text-center">
 
-const arr = ref(emptyArray(10))
+**包名**
+`beautifulsoup4`
+
+**导入名**
+`bs4`
+
+</div>
+<div class="text-center">
+
+**包名**
+`pillow`
+
+**导入名**
+`PIL`
+
+</div>
+<div class="text-center">
+
+**包名**
+`python-dateutil`
+
+**导入名**
+`dateutil`
+
+</div>
+</div>
+
+### 解决方案
+
+```toml
+[project]
+name = "beautifulsoup4"
+import-names = ["bs4"]
 ```
 
-Use `{monaco-run}` to create an editor that can execute the code directly in the slide:
+<div class="mt-4 text-blue-600">
 
-```ts {monaco-run}
-import { version } from 'vue'
-import { emptyArray, sayHello } from './external'
+💡 工具可以自动检测未安装的依赖
+💡 改善开发体验
 
-sayHello()
-console.log(`vue ${version}`)
-console.log(emptyArray<number>(10).reduce(fib => [...fib, fib.at(-1)! + fib.at(-2)!], [1, 1]))
-```
+</div>
+
+</div>
+
+<!--
+PEP 794 解决了包名和导入名不一致的问题，让工具能够更智能地处理依赖关系。
+-->
+
+---
+layout: section
+---
+
+# 总结与展望
 
 ---
 layout: center
 class: text-center
 ---
 
-# Learn More
+# 打包生态的未来
 
-[Documentation](https://sli.dev) · [GitHub](https://github.com/slidevjs/slidev) · [Showcases](https://sli.dev/showcases.html)
+<div class="mt-8 text-left max-w-2xl mx-auto">
 
-<PoweredBySlidev mt-10 />
+### 🎯 标准化是关键
+- 统一的规范减少碎片化
+- 改善工具之间的互操作性
+
+### 🚀 用户体验优先
+- 更快的依赖解析
+- 更可靠的环境复现
+- 更智能的工具支持
+
+### 🤝 社区驱动
+- 积极参与 PEP 讨论
+- 提供反馈和使用案例
+- 共同塑造 Python 的未来
+
+</div>
+
+---
+layout: center
+class: text-center
+---
+
+# 谢谢！
+
+<div class="text-xl text-gray-500 mt-4">
+问题与讨论
+</div>
+
+<div class="mt-8">
+
+### 相关链接
+
+[PEPs 官网](https://peps.python.org) · [Python Packaging User Guide](https://packaging.python.org) · [PyPA 讨论区](https://discuss.python.org/c/packaging/14)
+
+</div>
