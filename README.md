@@ -9,6 +9,7 @@ Slides & code for my talks, using [Slidev](https://github.com/slidevjs/slidev)!
 ###### 0000
 
  - `zh` [利用 Pydantic 提升 Python 代码的开发体验](./pycon-pydantic/)
+ - `zh` [Python 打包生态系统的最新进展](./2025-pycon-peps/)
 
 <!-- TODO: Add your talk to here. -->
 
