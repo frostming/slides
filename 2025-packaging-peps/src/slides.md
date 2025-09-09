@@ -1,8 +1,9 @@
 ---
 theme: apple-basic
-# background: https://unsplash.com/photos/nGrfKmtwv24/download?force=true&w=1920
+image: /background.png
 highlighter: shiki
 lineNumbers: false
+colorSchema: light
 info: |
   ## Python Packaging PEPs 闪电演讲
 
@@ -13,27 +14,108 @@ drawings:
   persist: false
 transition: slide-left
 mdc: true
+layout: intro-image
 ---
 
-# Python Packaging PEPs
-
-<div class="text-2xl text-gray-500 mt-2">
-打包生态系统的最新进展
+<div class="absolute top-10">
+  <span class="font-700">
+    Frost Ming @ PyCon China 2025
+  </span>
 </div>
 
-<div class="pt-12">
-  <span @click="$slidev.nav.next" class="px-2 py-1 rounded cursor-pointer" hover="bg-white bg-opacity-10">
-    开始 <carbon:arrow-right class="inline"/>
-  </span>
+<div class="absolute bottom-10">
+  <h1>Python Packaging PEPs</h1>
+  <p>打包生态的最新进展</p>
 </div>
 
 <!--
 这个演讲将介绍 Python 打包生态系统的最新 PEP 提案进展，包括已经完成、已接受和正在讨论的提案。
 -->
 
+<style>
+  /* Global styles for light purple theme consistency */
+  :root {
+    --primary-purple: #7c3aed;
+    --dark-purple: #6d28d9;
+    --light-purple: #ddd6fe;
+    --purple-50: #faf5ff;
+    --purple-100: #f3e8ff;
+    --purple-600: #7c3aed;
+    --purple-700: #6d28d9;
+    --purple-900: #4c1d95;
+  }
+
+  .slidev-layout {
+    background: transparent;
+  }
+
+  h1 {
+    color: #1a1a1a !important;
+    font-weight: 700;
+  }
+
+  h2 {
+    color: var(--primary-purple) !important;
+  }
+
+  h3 {
+    color: var(--dark-purple) !important;
+  }
+
+  .slidev-code {
+    background: rgba(124, 58, 237, 0.05) !important;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+  }
+
+  table {
+    background: var(--purple-50);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--light-purple);
+  }
+
+  table th {
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--dark-purple) 100%);
+    color: white;
+    padding: 12px;
+    font-weight: 600;
+  }
+
+  table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--light-purple);
+    color: #1a1a1a;
+  }
+
+  code {
+    background: var(--purple-100) !important;
+    color: var(--dark-purple) !important;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  pre code {
+    background: transparent !important;
+    color: inherit !important;
+  }
+
+  .mermaid {
+    background: transparent !important;
+  }
+
+  a {
+    color: var(--primary-purple) !important;
+  }
+
+  a:hover {
+    color: var(--dark-purple) !important;
+  }
+</style>
+
 ---
 layout: intro
 class: pl-20
+background: /background.png
 ---
 
 # 关于我
@@ -43,21 +125,21 @@ class: pl-20
     <img src="https://github.com/frostming.png" class="rounded-full w-30 h-30" />
   </div>
   <div>
-    <div class="text-3xl font-bold">Frost Ming</div>
-    <div class="text-xl text-gray-500 mt-2">Python Developer · PyPA Member</div>
+    <div class="text-3xl font-bold text-purple-900">Frost Ming</div>
+    <div class="text-xl text-purple-600 mt-2">Python Developer · PyPA Member</div>
     <div class="mt-4">
       <div>🛠️ PDM 作者 - 现代 Python 包管理器</div>
       <div>📦 Python 打包生态贡献者</div>
       <div>✨ 开源项目：Unearth, Marko, Monas</div>
     </div>
     <div class="mt-4 flex gap-4 text-sm">
-      <a href="https://github.com/frostming" target="_blank" class="text-blue-500">
+      <a href="https://github.com/frostming" target="_blank" class="text-purple-600 hover:text-purple-800 transition-colors">
         <carbon:logo-github class="inline mr-1"/> @frostming
       </a>
-      <a href="https://frostming.com" target="_blank" class="text-blue-500">
+      <a href="https://frostming.com" target="_blank" class="text-purple-600 hover:text-purple-800 transition-colors">
         <carbon:blog class="inline mr-1"/> frostming.com
       </a>
-      <a href="https://mas.to/@frostming" target="_blank" class="text-blue-500">
+      <a href="https://mas.to/@frostming" target="_blank" class="text-purple-600 hover:text-purple-800 transition-colors">
         <carbon:logo-mastodon class="inline mr-1"/> mas.to@frostming
       </a>
     </div>
@@ -66,6 +148,7 @@ class: pl-20
 
 ---
 transition: fade-out
+background: /background.png
 ---
 
 # 什么是 PEP？
@@ -95,10 +178,20 @@ transition: fade-out
 
 ---
 layout: section
+background: /background.png
 ---
 
 # 已完成的 PEP
 ## Final Status
+
+<style>
+  .slidev-layout.section h1 {
+    color: #1a1a1a;
+  }
+  .slidev-layout.section h2 {
+    color: #7c3aed;
+  }
+</style>
 
 ---
 
@@ -244,7 +337,7 @@ lint = ["ruff>=0.1", "mypy>=1.0"]
 
 </div>
 
-<div class="mt-4 p-3 bg-blue-50 rounded text-sm">
+<div class="mt-4 p-3 bg-purple-50 rounded-lg text-sm border border-purple-200">
 
 📌 **PDM 已原生支持**: PDM 现已采用标准的 `dependency-groups`，取代了原有的 `tool.pdm.dev-dependencies`
 
@@ -319,10 +412,20 @@ PEP 751 定义了一个标准的锁文件格式，用于记录精确的依赖版
 
 ---
 layout: section
+background: /background.png
 ---
 
 # 已接受的 PEP
 ## Accepted Status
+
+<style>
+  .slidev-layout.section h1 {
+    color: #1a1a1a;
+  }
+  .slidev-layout.section h2 {
+    color: #7c3aed;
+  }
+</style>
 
 ---
 
@@ -346,7 +449,7 @@ graph LR
     C --> D[仅下载需要的包]
 ```
 
-<div class="mt-4 text-green-600">
+<div class="mt-4 text-purple-700 font-semibold">
 
 ✅ 减少下载量
 ✅ 加快依赖解析速度
@@ -430,10 +533,20 @@ PEP 691 为 PyPI 简单 API 添加了 JSON 格式支持，使工具能够更容�
 
 ---
 layout: section
+background: /background.png
 ---
 
 # 讨论中的 PEP
 ## Under Discussion
+
+<style>
+  .slidev-layout.section h1 {
+    color: #1a1a1a;
+  }
+  .slidev-layout.section h2 {
+    color: #7c3aed;
+  }
+</style>
 
 ---
 
@@ -517,7 +630,7 @@ name = "beautifulsoup4"
 import-names = ["bs4"]
 ```
 
-<div class="mt-4 text-blue-600">
+<div class="mt-4 text-purple-700 font-semibold">
 
 💡 工具可以自动检测未安装的依赖
 💡 改善开发体验
@@ -533,11 +646,12 @@ PEP 794 解决了包名和导入名不一致的问题，让工具能够更智能
 ---
 layout: center
 class: text-center
+background: /background.png
 ---
 
 # 谢谢！
 
-<div class="text-xl text-gray-500 mt-4">
+<div class="text-xl text-purple-600 mt-4 font-semibold">
 问题与讨论
 </div>
 
