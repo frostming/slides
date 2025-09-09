@@ -135,6 +135,35 @@ PEP 723 允许在 Python 脚本文件中直接声明依赖关系，非常适合�
 
 ---
 
+# PEP 723：运行脚本
+
+<div class="mt-6">
+
+### 使用现代工具直接运行
+
+```bash
+# 使用 PDM - 自动安装依赖并运行
+pdm run script.py
+
+# 使用 uv - 自动安装依赖并运行
+uv run script.py
+```
+
+### 特点
+
+- 🚀 自动检测并安装脚本中声明的依赖
+- 📦 创建隔离的虚拟环境
+- ✨ 无需手动管理依赖
+- 🔄 支持依赖版本锁定和更新
+
+</div>
+
+<!--
+PDM 和 uv 等现代工具可以自动解析 PEP 723 格式的内联元数据，创建虚拟环境并安装依赖，让单文件脚本的运行变得非常简单。
+-->
+
+---
+
 # PEP 735：依赖组
 
 <div class="mt-6">
@@ -166,6 +195,64 @@ dev = [
 
 <!--
 PEP 735 在 pyproject.toml 中定义了标准的依赖组格式，统一了不同工具的依赖管理方式。
+-->
+
+---
+
+# 依赖组 vs 可选依赖
+
+<div class="grid grid-cols-2 gap-6 mt-4">
+<div>
+
+### 🎁 可选依赖 (Optional Dependencies)
+
+```toml
+[project.optional-dependencies]
+aws = ["boto3>=1.26", "s3fs>=2023.1"]
+viz = ["matplotlib>=3.7", "seaborn"]
+```
+
+**用户功能**
+- 发布到 PyPI
+- 面向最终用户
+- `pip install pkg[aws]`
+- 扩展包功能
+
+</div>
+<div>
+
+### 🔧 依赖组 (Dependency Groups)
+
+```toml
+[dependency-groups]
+test = ["pytest>=7.0", "pytest-cov"]
+lint = ["ruff>=0.1", "mypy>=1.0"]
+```
+
+**开发工具**
+- 不发布到 PyPI
+- 面向开发者
+- `pip install --dependency-groups test`
+- 管理开发环境
+
+</div>
+</div>
+
+<div class="mt-6 text-center text-sm">
+
+**关键区别**: 可选依赖是包的一部分，依赖组是开发环境的一部分
+
+</div>
+
+<div class="mt-4 p-3 bg-blue-50 rounded text-sm">
+
+📌 **PDM 已原生支持**: PDM 现已采用标准的 `dependency-groups`，取代了原有的 `tool.pdm.dev-dependencies`
+
+</div>
+
+<!--
+可选依赖和依赖组服务于不同的目的：可选依赖为用户提供额外功能，依赖组为开发者提供开发工具管理。
+PDM 作为早期采用者，已将其专有格式迁移到标准格式。
 -->
 
 ---
@@ -203,6 +290,34 @@ PEP 751 定义了一个标准的锁文件格式，用于记录精确的依赖版
 -->
 
 ---
+
+# PEP 751：各工具支持情况
+
+<div class="mt-4">
+
+### 当前各工具锁文件
+
+<div class="mt-4 text-sm">
+
+| 工具      | 当前格式                 | 导出 pylock.toml | 从 pylock.toml 安装 |
+| --------- | ------------------------ | ---------------- | ------------------- |
+| Poetry    | poetry.lock              | 否               | 否                  |
+| PDM       | pdm.lock/**pylock.toml** | 是               | 是                  |
+| uv        | uv.lock                  | 是               | 是                  |
+| pip-tools | requirements.txt         | 否               | 否                  |
+| pip       | 无                       | 是               | 否                  |
+
+
+另外，Dependabot 也已开始支持 pylock.toml。
+</div>
+
+</div>
+
+<!--
+虽然 PEP 751 已被接受，但工具采用需要时间。大多数工具将首先支持导出到 pylock.toml，同时保留自己的内部格式。
+-->
+
+---
 layout: section
 ---
 
@@ -236,6 +351,20 @@ graph LR
 ✅ 减少下载量
 ✅ 加快依赖解析速度
 ✅ 改善用户体验
+
+```html
+<a href="https://files.pythonhosted.org/packages/36/42/015c23096649b908c809c69388a805a571a3bea44362fe87e33fc3afa01f/flask-3.0.0-py3-none-any.whl#sha256=21128f47e4e3b9d597a3e8521a329bf56909b690fcc3fa3e477725aa81367638"
+    data-requires-python="&gt;=3.8"
+    data-dist-info-metadata="sha256=d365cfebd5538b09f96e5711807732b9243670b4ee24557c157c36c78427c4aa"
+    data-core-metadata="sha256=d365cfebd5538b09f96e5711807732b9243670b4ee24557c157c36c78427c4aa">
+        flask-3.0.0-py3-none-any.whl
+</a>
+```
+元数据链接：
+
+```
+https://files.pythonhosted.org/packages/.../flask-3.0.0-py3-none-any.whl.metadata
+```
 
 </div>
 
@@ -281,6 +410,14 @@ PEP 658 允许包索引直接提供包的元数据，无需下载整个包文件
 </div>
 </div>
 
+方法：
+
+```
+GET https://pypi.org/simple/django/
+
+Accept: application/vnd.pypi.simple.v1+json
+```
+
 <div class="mt-6 text-center">
 
 **更结构化** · **更易解析** · **更多元数据**
@@ -304,18 +441,18 @@ layout: section
 
 <div class="mt-6">
 
-```toml {all|2-5|7-9|11}
+```toml {all|2-6|8-11}
+[project]
+name = "mypackage"
+default-optional-dependency-keys = [
+    "recommended",
+]
+
 [project.optional-dependencies]
-dev = [
-  "pytest",
-  "black",
-  "mypy",
+lite = []
+recommended = [
+  "rich", "httpx"
 ]
-docs = [
-  "sphinx",
-  "sphinx-rtd-theme",
-]
-default = ["dev", "docs"]  # 默认安装的额外依赖
 ```
 
 ### 使用场景
@@ -325,7 +462,7 @@ default = ["dev", "docs"]  # 默认安装的额外依赖
 pip install mypackage
 
 # 仅安装核心依赖
-pip install mypackage --only-required
+pip install mypackage[lite]
 ```
 
 </div>
@@ -392,37 +529,6 @@ import-names = ["bs4"]
 <!--
 PEP 794 解决了包名和导入名不一致的问题，让工具能够更智能地处理依赖关系。
 -->
-
----
-layout: section
----
-
-# 总结与展望
-
----
-layout: center
-class: text-center
----
-
-# 打包生态的未来
-
-<div class="mt-8 text-left max-w-2xl mx-auto">
-
-### 🎯 标准化是关键
-- 统一的规范减少碎片化
-- 改善工具之间的互操作性
-
-### 🚀 用户体验优先
-- 更快的依赖解析
-- 更可靠的环境复现
-- 更智能的工具支持
-
-### 🤝 社区驱动
-- 积极参与 PEP 讨论
-- 提供反馈和使用案例
-- 共同塑造 Python 的未来
-
-</div>
 
 ---
 layout: center
