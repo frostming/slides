@@ -8,20 +8,20 @@ Slides & code for my talks, using [Slidev](https://github.com/slidevjs/slidev)!
 
 ### 2020
 
-- `zh` [基于 PEP 582 的包管理器](https://slides.frostming.com/pep582/)
+- `zh` [基于 PEP 582 的包管理器](https://slides.fming.dev/pep582/)
 
 ### 2021
 
-- `zh` [Python 打包 101](https://slides.frostming.com/python-packging/)
-- `zh` [PDM - Python 打包的新体验](https://slides.frostming.com/pdm/)
+- `zh` [Python 打包 101](https://slides.fming.dev/python-packging/)
+- `zh` [PDM - Python 打包的新体验](https://slides.fming.dev/pdm/)
 
 ### 2024
 
-- `zh` [利用 Pydantic 提升 Python 代码的开发体验](https://slides.frostming.com/pydantic/)
+- `zh` [利用 Pydantic 提升 Python 代码的开发体验](https://slides.fming.dev/pydantic/)
 
 ### 2025
 
-- `zh` [Python 打包生态系统的最新进展](https://slides.frostming.com/2025-pycon-peps/)
+- `zh` [Python 打包生态系统的最新进展](https://slides.fming.dev/2025-pycon-peps/)
 
 <!-- TODO: Add your talk to here. -->
 
