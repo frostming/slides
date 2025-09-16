@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "pnpm run picker dev --open",
     "build": "rimraf dist && pnpm run picker build",
-    "build:all": "rimraf dist && pnpm -r run build",
+    "build:all": "rimraf dist && pnpm -r run build && cp -r archive/* dist/",
     "export": "pnpm run picker export",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "slidev",
-    "build": "slidev build --out ../../dist/pycon-pydantic --base /pycon-pydantic/",
+    "build": "slidev build --out ../../dist/pydantic --base /pydantic/",
     "export": "slidev export --per-slide --dark --output ../slides.pdf"
   },
   "dependencies": {
