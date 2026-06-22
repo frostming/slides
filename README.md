@@ -12,7 +12,7 @@ Slides & code for my talks, using [Slidev](https://github.com/slidevjs/slidev)!
 
 ### 2021
 
-- `zh` [Python 打包 101](https://slides.fming.dev/python-packging/)
+- `zh` [Python 打包 101](https://slides.fming.dev/python-packaging/)
 - `zh` [PDM - Python 打包的新体验](https://slides.fming.dev/pdm/)
 
 ### 2024
