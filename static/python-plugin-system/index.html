@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python 包的插件系统设计 · PyCon China 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Design tokens — mirrored from cn.pycon.org/2026 (pixel/brick)
+   ============================================================ */
+:root{
+  --bg-base:#3daa84;
+  --bg-dot:#4fb089;
+  --bg-deep:#2a7f61;
+  --paper:#ffffff;
+  --paper-muted:#edf8f3;
+  --ink:#1a1a1a;
+  --ink-soft:#3a3a3a;
+  --gray-pixel:#9e9e9e;
+
+  --py-yellow:#f9ca33;
+  --py-orange:#f19640;
+  --py-redhot:#e27344;
+  --py-red:#ec4567;
+  --py-pink:#b6316c;
+  --py-purple:#8312dc;
+  --py-indigo:#424990;
+  --py-blue:#149ada;
+  --py-green:#75be4e;
+  --accent:#0e6c9e;
+
+  --font-pixel:"Press Start 2P","AlibabaPuHuiTi",system-ui,sans-serif;
+  --font-body:"AlibabaPuHuiTi","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+
+  --brick-depth:6px;
+  --slide-accent:var(--py-blue);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background-color:var(--bg-base);
+  background-image:radial-gradient(var(--bg-dot) 2.5px,transparent 2.5px);
+  background-size:24px 24px;
+  font-family:var(--font-body);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- stage / fixed 1280x720 canvas ---------- */
+#stage{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
+#deck{width:1280px;height:720px;position:relative;transform-origin:center center;flex:none}
+
+.slide{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;
+  background:var(--paper);
+  border:3px solid var(--ink);
+  box-shadow:0 12px 0 rgba(26,26,26,.30), 0 12px 0 3px rgba(26,26,26,.18);
+  padding:52px 52px 38px;
+  overflow:hidden;
+}
+.slide.active{display:flex}
+/* the "stud" strip on top of every brick */
+.slide::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:14px;
+  background:var(--slide-accent);
+  border-bottom:3px solid var(--ink);
+}
+.slide::after{
+  content:"";position:absolute;top:14px;left:44px;width:210px;height:12px;
+  background:radial-gradient(circle at 15px center,color-mix(in srgb,var(--slide-accent) 72%,#000) 0 7px,transparent 7px);
+  background-size:70px 12px;
+  opacity:.85;
+}
+
+/* ---------- header ---------- */
+.kicker{
+  font-family:var(--font-pixel);font-size:11px;letter-spacing:1px;
+  color:var(--accent);text-transform:uppercase;margin-bottom:14px;
+}
+h1{font-size:52px;line-height:1.15;margin:0 0 18px;font-weight:800;letter-spacing:-.5px}
+h2{font-size:38px;line-height:1.2;margin:0 0 6px;font-weight:800;letter-spacing:-.3px}
+.rule{height:5px;width:96px;background:var(--slide-accent);margin:14px 0 26px}
+.sub{font-size:20px;color:var(--ink-soft);line-height:1.6;margin:0 0 22px}
+.body{flex:1;min-height:0}
+/* for slides whose content is shorter than the brick — center it vertically
+   instead of letting it hang from the top with dead space below */
+.body.vcenter{display:flex;flex-direction:column;justify-content:center;gap:26px}
+
+/* ---------- footer ---------- */
+.foot{
+  position:absolute;left:52px;right:52px;bottom:14px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--font-pixel);font-size:9px;color:var(--gray-pixel);letter-spacing:.5px;
+}
+.foot .num{color:var(--ink)}
+
+/* ---------- generic pieces ---------- */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:100%}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.cols-6-4{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;height:100%}
+.cols-4-6{display:grid;grid-template-columns:1fr 1.5fr;gap:20px;height:100%}
+/* a grid item's automatic min-width is its min-content width, which a
+   `white-space: pre` block would blow up — pin it so columns stay put */
+.cols > *,.cols3 > *,.cols-6-4 > *,.cols-4-6 > *{min-width:0}
+.stack{display:flex;flex-direction:column;gap:14px;min-height:0;min-width:0}
+/* never let flex shrink a code block into clipping its last lines —
+   overflow is handled by the auto-fit pass instead */
+.stack > pre,.stack > .brick,.stack > .callout{flex:0 0 auto}
+
+.brick{
+  background:var(--paper);border:3px solid var(--ink);
+  box-shadow:0 var(--brick-depth) 0 rgba(26,26,26,.22);
+  padding:18px 20px;
+}
+.brick.tint{background:var(--paper-muted)}
+.brick.yellow{background:#fff6da;border-color:var(--ink);box-shadow:0 var(--brick-depth) 0 color-mix(in srgb,var(--py-yellow) 70%,#000)}
+.brick.blue{background:#e4f4fd;box-shadow:0 var(--brick-depth) 0 color-mix(in srgb,var(--py-blue) 65%,#000)}
+.brick.green{background:#eaf7e3;box-shadow:0 var(--brick-depth) 0 color-mix(in srgb,var(--py-green) 65%,#000)}
+.brick.red{background:#fdeaef;box-shadow:0 var(--brick-depth) 0 color-mix(in srgb,var(--py-red) 60%,#000)}
+.brick.purple{background:#f3ebfd;box-shadow:0 var(--brick-depth) 0 color-mix(in srgb,var(--py-purple) 60%,#000)}
+.brick h3{margin:0 0 10px;font-size:21px;font-weight:800}
+.brick p{margin:0;font-size:17px;line-height:1.6;color:var(--ink-soft)}
+.brick .tag{
+  font-family:var(--font-pixel);font-size:9px;letter-spacing:.5px;
+  display:inline-block;margin-bottom:10px;padding:5px 8px;
+  background:var(--ink);color:#fff;
+}
+
+ul.tick,ul.plain{margin:0;padding:0;list-style:none}
+ul.tick li,ul.plain li{
+  font-size:19px;line-height:1.55;margin:0 0 12px;padding-left:30px;position:relative;color:var(--ink-soft);
+}
+ul.plain li{padding-left:20px}
+ul.tick li::before{
+  content:"";position:absolute;left:0;top:8px;width:12px;height:12px;
+  background:var(--slide-accent);border:2px solid var(--ink);
+}
+ul.plain li::before{content:"";position:absolute;left:0;top:11px;width:8px;height:8px;background:var(--gray-pixel)}
+ul.tick.good li::before{background:var(--py-green)}
+ul.tick.bad li::before{background:var(--py-red)}
+ul.tick.small li{font-size:17px;margin-bottom:9px}
+li b,p b{color:var(--ink);font-weight:800}
+li code,p code,td code,h3 code{
+  font-family:var(--font-mono);font-size:.88em;background:var(--paper-muted);
+  border:1px solid #cfe6db;padding:1px 5px;
+}
+
+.big{font-size:30px;font-weight:800;line-height:1.4}
+.mono{font-family:var(--font-mono)}
+.px{font-family:var(--font-pixel)}
+.dim{color:var(--gray-pixel)}
+.center{display:grid;place-items:center;text-align:center;height:100%}
+
+/* ---------- code ---------- */
+pre{
+  margin:0;background:var(--ink);color:#e8efe9;
+  border:3px solid var(--ink);
+  box-shadow:0 var(--brick-depth) 0 rgba(26,26,26,.30);
+  padding:14px 16px;overflow:hidden;
+}
+code.py{font-family:var(--font-mono);font-size:16px;line-height:1.6;white-space:pre;display:block}
+pre.sm code.py{font-size:14.5px;line-height:1.55}
+pre .cap{
+  display:block;font-family:var(--font-pixel);font-size:9px;color:var(--py-yellow);
+  margin-bottom:10px;letter-spacing:.5px;
+}
+.t-com{color:#7f8c86;font-style:italic}
+.t-str{color:#9edd77}
+.t-kw{color:#f9ca33;font-weight:700}
+.t-bif{color:#c69bff}
+.t-num{color:#f19640}
+.t-fn{color:#5fc8f5}
+.t-dec{color:#e27344}
+.t-cls{color:#59d3b4}
+.t-op{color:#cfd8d4}
+
+/* ---------- table ---------- */
+table.cmp{width:100%;border-collapse:collapse;font-size:15.5px}
+table.cmp th,table.cmp td{border:2px solid var(--ink);padding:9px 11px;text-align:left;vertical-align:top}
+table.cmp thead th{background:var(--ink);color:#fff;font-family:var(--font-body);font-weight:800;font-size:15px}
+table.cmp tbody th{background:var(--paper-muted);font-weight:800;width:132px}
+table.cmp tr:nth-child(even) td{background:#fafdfb}
+.pill{display:inline-block;padding:2px 7px;border:2px solid var(--ink);font-size:12px;font-weight:800}
+.pill.g{background:#d9f2c9}.pill.y{background:#ffeeb8}.pill.r{background:#ffd9e1}
+
+/* ---------- section divider ---------- */
+.slide.section{
+  background:var(--slide-accent);
+  color:#fff;justify-content:center;
+  background-image:radial-gradient(rgba(255,255,255,.13) 2.5px,transparent 2.5px);
+  background-size:26px 26px;
+}
+.slide.section::after{opacity:.35}
+.slide.section .kicker{color:rgba(255,255,255,.85)}
+.slide.section h2{font-size:56px;color:#fff}
+.slide.section .sub{color:rgba(255,255,255,.92);font-size:22px;max-width:800px}
+.slide.section .bignum{
+  font-family:var(--font-pixel);font-size:110px;color:rgba(255,255,255,.22);
+  line-height:1;margin-bottom:10px;
+}
+.slide.section .rule{background:#fff}
+
+/* ---------- cover ---------- */
+.slide.cover{background:var(--paper)}
+.cover .logo-row{display:flex;gap:8px;margin-bottom:30px}
+.cover .logo-row i{width:34px;height:34px;border:3px solid var(--ink);display:block;box-shadow:0 4px 0 rgba(26,26,26,.25)}
+.cover h1{font-size:60px}
+.cover .talk-meta{
+  display:flex;gap:14px;flex-wrap:wrap;margin-top:auto;
+  font-family:var(--font-pixel);font-size:10px;letter-spacing:.5px;
+}
+.cover .talk-meta span{border:3px solid var(--ink);padding:9px 12px;background:var(--paper-muted);box-shadow:0 4px 0 rgba(26,26,26,.2)}
+
+/* ---------- flow / diagram ---------- */
+.flow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.node{
+  border:3px solid var(--ink);background:var(--paper);padding:11px 14px;
+  font-size:16px;font-weight:700;box-shadow:0 5px 0 rgba(26,26,26,.22);
+}
+.node.k{background:var(--py-yellow)}
+.node.b{background:#cfeaf9}
+.node.g{background:#dcf2cd}
+.node.r{background:#ffd9e1}
+.node.p{background:#ece0fb}
+.arrow{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--ink)}
+.lane{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+
+.badge-n{
+  font-family:var(--font-pixel);font-size:13px;background:var(--ink);color:#fff;
+  padding:8px 10px;display:inline-block;margin-right:10px;
+}
+
+.callout{
+  border-left:10px solid var(--slide-accent);background:var(--paper-muted);
+  border-top:3px solid var(--ink);border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);
+  padding:14px 18px;font-size:18px;line-height:1.55;
+  box-shadow:0 5px 0 rgba(26,26,26,.18);
+}
+.callout b{font-weight:800}
+
+/* ---------- overview mode ---------- */
+body.ov{overflow:auto}
+body.ov #stage{position:static;display:block;overflow:visible;padding:26px}
+body.ov #deck{width:100%;height:auto;transform:none!important;display:grid;
+  grid-template-columns:repeat(auto-fill,256px);justify-content:center;gap:18px}
+/* scale to 20% and claim back the 80% with negative margins, so each
+   thumbnail's margin box is exactly 256x144 and the grid tracks work */
+body.ov .slide{
+  position:relative;display:flex!important;cursor:pointer;
+  width:1280px;height:720px;min-width:0;
+  transform:scale(.2);transform-origin:top left;
+  margin:0 -1024px -576px 0;
+}
+body.ov .slide.active{outline:12px solid var(--py-yellow);outline-offset:6px}
+
+/* ---------- help ---------- */
+#help{
+  position:fixed;right:14px;bottom:12px;font-family:var(--font-pixel);font-size:8px;
+  color:rgba(255,255,255,.75);background:rgba(26,26,26,.35);padding:7px 9px;pointer-events:none;
+}
+#bar{position:fixed;left:0;top:0;height:6px;background:var(--py-yellow);z-index:9;transition:width .18s ease-out}
+
+/* every slide is laid out at once so it can be measured, then hidden again */
+body.measuring .slide{display:flex!important;visibility:hidden}
+
+@media print{
+  html,body{overflow:visible;background:#fff}
+  #stage{position:static;display:block}
+  #deck{transform:none!important;width:auto;height:auto}
+  .slide{display:flex!important;position:relative;page-break-after:always;
+         width:1280px;height:720px;box-shadow:none;margin:0 auto}
+  #help,#bar{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="bar"></div>
+<div id="stage"><div id="deck">
+
+<!-- ===================== 1 · COVER ===================== -->
+<section class="slide cover" style="--slide-accent:var(--py-yellow)">
+  <div class="logo-row">
+    <i style="background:var(--py-blue)"></i>
+    <i style="background:var(--py-yellow)"></i>
+    <i style="background:var(--py-green)"></i>
+    <i style="background:var(--py-red)"></i>
+    <i style="background:var(--py-purple)"></i>
+  </div>
+  <div class="kicker">PyCon China 2026 · Talk</div>
+  <h1>Python 包的<br>插件系统设计</h1>
+  <p class="sub" style="max-width:780px">
+    从 monkeypatch 的泥潭出发，把「别人怎么扩展我的库」变成一个<b>可以被设计的接口问题</b>。
+  </p>
+  <div class="talk-meta">
+    <span>01 · WHY EXTEND</span>
+    <span>02 · MONKEYPATCH</span>
+    <span>03 · THE INTERFACE</span>
+    <span>04 · FOUR WAYS TO LOAD</span>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 2 · EXAMPLE + AVALANCHE ===================== -->
+<section class="slide" style="--slide-accent:var(--py-red)">
+  <div class="kicker">01 · Why Extend</div>
+  <h2>一个小库，是如何被需求撑爆的</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols-6-4">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/core.py — 100 lines, zero dependencies</span>def render(text: str) -&gt; str:
+    out = []
+    for b in split_blocks(text):
+        if b.kind == "fence":
+            out.append(render_fence(b.lang, b.code))
+        else:
+            out.append(render_paragraph(b.text))
+    return "\n".join(out)
+
+
+def render_fence(lang: str, code: str) -&gt; str:
+    return f'&lt;pre&gt;&lt;code class="{lang}"&gt;{escape(code)}&lt;/code&gt;&lt;/pre&gt;'</code></pre>
+        <div class="callout" style="border-left-color:var(--py-red)">
+          <b>关键观察：</b>这些需求的共同点不是「功能」，而是<b>它们都落在同一个位置</b>——<code>render_fence()</code>，
+          以及输出 HTML 之前。那个位置，就是你的<b>扩展点</b>。
+        </div>
+      </div>
+      <div class="stack">
+        <div class="brick red" style="flex:1">
+          <span class="tag">12 MONTHS LATER</span>
+          <h3>它很好用，于是它开始收到 issue</h3>
+          <ul class="tick bad small" style="margin-top:12px">
+            <li><b>#41 Mermaid 图</b><span class="dim"> → 需要前端运行时</span></li>
+            <li><b>#57 数学公式</b><span class="dim"> → 依赖 katex</span></li>
+            <li><b>#63 代码高亮</b><span class="dim"> → 依赖 pygments</span></li>
+            <li><b>#71 内部 @提及</b><span class="dim"> → 公司内部，永远不该进上游</span></li>
+            <li><b>#88 图片走 CDN</b><span class="dim"> → 每家规则都不同</span></li>
+            <li><b>#94 PlantUML / Graphviz / …</b><span class="dim"> → 永远还有下一个</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 3 · THREE ROADS ===================== -->
+<section class="slide">
+  <div class="kicker">01 · Three Roads</div>
+  <h2>你只有三条路</h2>
+  <div class="rule"></div>
+  <div class="body vcenter">
+    <div class="cols3" style="align-content:start">
+      <div class="brick red">
+        <span class="tag">ROAD A</span>
+        <h3>全塞进核心</h3>
+        <ul class="tick bad small" style="margin-top:10px">
+          <li>依赖爆炸：装个 Markdown 库拖进 katex + pygments</li>
+          <li>每个功能都是你要维护一辈子的 API</li>
+          <li>企业内部需求永远进不来</li>
+        </ul>
+      </div>
+      <div class="brick yellow">
+        <span class="tag">ROAD B</span>
+        <h3>让别人 fork</h3>
+        <ul class="tick small" style="margin-top:10px">
+          <li>生态碎片化：<code>mdlite-acme</code>、<code>mdlite2</code>…</li>
+          <li>安全补丁无法传播</li>
+          <li>两个 fork 的能力无法组合</li>
+        </ul>
+      </div>
+      <div class="brick green">
+        <span class="tag">ROAD C</span>
+        <h3>设计插件系统</h3>
+        <ul class="tick good small" style="margin-top:10px">
+          <li>核心依赖为零，能力按需 <code>pip install</code></li>
+          <li>能力可组合、可独立发版</li>
+          <li>你维护的是<b>接口</b>，不是所有实现</li>
+        </ul>
+      </div>
+    </div>
+    <div class="cols" style="align-items:start">
+      <div class="brick purple">
+        <h3>插件系统 = 把开闭原则变成一个<span style="color:var(--py-purple)">发布产物</span></h3>
+        <p style="margin-top:8px">对<b>扩展</b>开放：第三方能加能力，不改你一行代码。<br>
+        对<b>修改</b>封闭：加能力不需要动核心，也不需要 fork。</p>
+      </div>
+      <div class="brick tint">
+        <h3>但代价是真实的</h3>
+        <p style="margin-top:8px">你从此有了<b>公共 API 契约</b>、<b>版本兼容义务</b>和<b>第三方代码的信任边界</b>。<br>
+        <span class="dim">所以不是每个库都需要插件系统——需要的是「变化维度」明显多于「核心逻辑」的库。</span></p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 4 · MONKEYPATCH ===================== -->
+<section class="slide" style="--slide-accent:var(--py-red)">
+  <div class="kicker">02 · Without a Plugin System</div>
+  <h2>Python 太动态了，所以用户总能「进来」</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols-6-4">
+      <div class="stack">
+        <pre><code class="py"><span class="cap">acme_mermaid.py — a third-party "plugin", 1998 style</span>import mdlite
+
+_original_render_fence = mdlite.render_fence   # 1. grab the original
+
+
+def _patched_render_fence(lang: str, code: str) -&gt; str:
+    if lang == "mermaid":                      # 2. inject our logic
+        return f'&lt;div class="mermaid"&gt;{escape(code)}&lt;/div&gt;'
+    return _original_render_fence(lang, code)  # 3. delegate the rest
+
+
+mdlite.render_fence = _patched_render_fence    # 4. global, no way back</code></pre>
+      </div>
+      <div class="stack">
+        <div class="brick tint">
+          <h3>为什么用户会这么干</h3>
+          <p>因为这是他们<b>唯一</b>的选择。你没给接口，他们就用语言给的能力。</p>
+        </div>
+        <div class="brick red">
+          <h3>你付出的代价</h3>
+          <p>你的<b>每一个模块级函数名</b>都变成了事实上的公共 API——哪怕你从没这么承诺过。</p>
+        </div>
+        <div class="callout" style="border-left-color:var(--py-red)">
+          它<b>能工作</b>。这正是问题所在——能工作，所以会扩散。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 5 · TWO FAILURE MODES ===================== -->
+<section class="slide" style="--slide-accent:var(--py-red)">
+  <div class="kicker">02 · Failure Modes</div>
+  <h2>它会以最难 debug 的两种方式崩掉</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">#1 — import order becomes business logic</span># acme_mermaid.py
+_orig = mdlite.render_fence
+mdlite.render_fence = wrap_a(_orig)
+
+# corp_highlight.py -- imported later
+_orig = mdlite.render_fence
+mdlite.render_fence = wrap_b(_orig)</code></pre>
+        <div class="brick red" style="flex:1">
+          <h3>谁在外层，谁就赢</h3>
+          <p>两个插件各自都对，合起来的行为却<b>取决于 import 顺序</b>。
+          再遇上条件导入或 <code>importlib.reload()</code>，链条会被<b>静默截断</b>，某个 patch 直接消失。<br><br>
+          <b>本质：</b>monkeypatch 没有<b>组合语义</b>，它只有「最后一个赢」。</p>
+        </div>
+      </div>
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">#2 — a refactor upstream, silence downstream</span># mdlite 1.x
+def render_fence(lang, code): ...
+
+# mdlite 2.0 -- internal refactor, not in the CHANGELOG
+class Renderer:
+    def render_fence(self, lang, code): ...
+    def render(self, text):
+        out.append(self.render_fence(...))</code></pre>
+        <div class="brick red" style="flex:1">
+          <h3>patch 依然「成功」，然后什么也没做</h3>
+          <p>模块上多了一个没人调用的属性，Mermaid 图悄悄变回灰色代码块。<b>没有异常，只有错误的输出</b>。<br><br>
+          这不是插件作者的错，也不是你的错——是「<b>没有契约</b>」的必然结果：双方对<b>什么可以变</b>从未达成一致。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 6 · WHAT IT LACKS -> THREE QUESTIONS ===================== -->
+<section class="slide" style="--slide-accent:var(--py-blue)">
+  <div class="kicker">02 → 03 · The Turn</div>
+  <h2>它缺的不是能力，是<span style="color:var(--py-red)">语义</span></h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <div class="brick red">
+          <h3>monkeypatch 做不到的六件事</h3>
+          <ul class="tick bad small" style="margin-top:12px">
+            <li><b>组合</b>：多个扩展如何共存　　<b>顺序</b>：谁先谁后，可声明</li>
+            <li><b>隔离</b>：一个炸了别拖垮全部　<b>发现</b>：现在到底装了什么</li>
+            <li><b>卸载</b>：测试后恢复干净状态　<b>契约</b>：什么算破坏性变更</li>
+          </ul>
+        </div>
+        <div class="brick green" style="flex:1">
+          <h3>把它当信号读</h3>
+          <p>当你发现<b>多个用户在 patch 同一个函数</b>时，那不是他们不守规矩——
+          那是他们在<b>替你指出扩展点应该在哪</b>。去看你的 issue 区和 GitHub 代码搜索。</p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="brick blue"><span class="tag">WHERE</span><h3>扩展点在哪？</h3>
+          <p>宿主在哪些时刻愿意把控制权交出去？<b>找法：</b>看被反复 patch 的地方、看不断增长的类型判断分支。</p></div>
+        <div class="brick yellow"><span class="tag">WHAT</span><h3>契约是什么？</h3>
+          <p>插件必须提供什么、能拿到什么、必须返回什么？<b>要点：</b>类型显式、副作用受限、语义单一。</p></div>
+        <div class="brick green"><span class="tag">HOW</span><h3>谁来发现和装配？</h3>
+          <p>宿主如何知道有哪些插件、按什么顺序装配？<span class="dim">← 这是本场的第 4 部分</span></p></div>
+        <div class="callout">
+          <b>顺序很重要。</b>多数插件系统翻车，是因为先选了 pluggy，再想扩展点切在哪。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 7 · SEAMS + REGISTRY ===================== -->
+<section class="slide">
+  <div class="kicker">03 · Where</div>
+  <h2>在「变化的接缝」上开口，并把它变成数据</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/pipeline.py — three seams, made explicit</span>def render(text: str, reg: "Registry") -&gt; str:
+    # seam 1: whole-document preprocessing
+    text = reg.apply_preprocessors(text)
+
+    out = []
+    for b in split_blocks(text):
+        if b.kind == "fence":
+            # seam 2: dispatch by lang
+            out.append(reg.render_block(b.lang, b.code))
+        else:
+            out.append(render_paragraph(b.text))
+
+    # seam 3: output postprocessing
+    return reg.apply_postprocessors("\n".join(out))</code></pre>
+        <div class="callout">三个接缝，覆盖了前面 6 个 issue 的<b>全部</b>。<span class="dim">不需要 20 个钩子。</span></div>
+      </div>
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/registry.py — the single source of truth</span>class Registry:
+    def register_block(self, r, *, origin: str) -&gt; None:
+        if not isinstance(r, BlockRenderer):
+            raise TypeError(f"{origin}: not a BlockRenderer")
+        if (prev := self._origin.get(r.lang)) is not None:
+            raise PluginConflict(               # never overwrite
+                f"{r.lang!r}: {prev!r} vs {origin!r}")
+        self._blocks[r.lang] = r
+        self._origin[r.lang] = origin
+
+    def render_block(self, lang, code, ctx) -&gt; str:
+        if (r := self._blocks.get(lang)) is None:
+            return default_fence(lang, code)    # degrade
+        return r.render(code, ctx)</code></pre>
+        <div class="brick green">
+          <h3>三个设计决定</h3>
+          <ul class="tick good small" style="margin-top:10px">
+            <li><b>冲突显式报错</b>，带上双方来源，而不是静默覆盖</li>
+            <li><b>缺失优雅降级</b>，回到默认行为而不是抛异常</li>
+            <li><b>实例化</b>的注册表，不是模块级全局字典 → 测试可隔离</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 8 · CONTRACT ===================== -->
+<section class="slide">
+  <div class="kicker">03 · The Contract</div>
+  <h2>用 <span class="mono">Protocol</span> 写下契约，别把 <span class="mono">self</span> 递出去</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols-6-4">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/api.py — the public contract, versioned</span>API_VERSION = 1        # plugins negotiate against this
+
+
+@dataclass(frozen=True)        # a snapshot, not internal state
+class RenderContext:
+    source_path: str | None
+    options: Mapping[str, object]      # read-only mapping
+    emit_asset: Callable[[str], None]  # the only write channel
+
+
+@runtime_checkable
+class BlockRenderer(Protocol):
+    """Render one fenced block into an HTML fragment."""
+
+    lang: str        # matched against the fence info string
+
+    def render(self, code: str, ctx: RenderContext) -&gt; str:
+        """Return HTML. Must not mutate ctx."""</code></pre>
+      </div>
+      <div class="stack">
+        <div class="brick blue">
+          <h3>为什么是 Protocol 而不是 ABC</h3>
+          <ul class="tick small" style="margin-top:10px">
+            <li>插件<b>不需要 import 你</b>再继承——结构化子类型，零耦合</li>
+            <li>mypy / pyright 能在插件仓库里静态校验</li>
+          </ul>
+        </div>
+        <div class="brick red">
+          <h3>三个最常见的坑</h3>
+          <ul class="tick bad small" style="margin-top:10px">
+            <li>把宿主整个递出去 → 每个私有属性都成了 API</li>
+            <li><code>None</code> 同时表达「没处理 / 空结果 / 出错」</li>
+            <li>位置参数签名 → 你永远加不了第 4 个参数</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <b>一句话检验：</b>能不能在<b>不看核心源码</b>的情况下写出一个正确的插件？
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 9 · FOUR AT A GLANCE ===================== -->
+<section class="slide">
+  <div class="kicker">04 · Four Ways to Load</div>
+  <h2>四种范式，一条「隐式程度」轴</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div style="display:flex;flex-direction:column;gap:18px;margin-top:6px">
+      <div class="flow">
+        <div class="node k" style="width:245px">① Flask 式<br><span class="dim mono" style="font-size:13px;font-weight:400">app.use(Ext())</span></div>
+        <div class="arrow">→</div>
+        <div class="node b" style="width:245px">② Django 式<br><span class="dim mono" style="font-size:13px;font-weight:400">INSTALLED_APPS = [...]</span></div>
+        <div class="arrow">→</div>
+        <div class="node g" style="width:245px">③ Entry Points<br><span class="dim mono" style="font-size:13px;font-weight:400">pip install 即生效</span></div>
+        <div class="arrow">→</div>
+        <div class="node p" style="width:245px">④ pluggy<br><span class="dim mono" style="font-size:13px;font-weight:400">hookspec / hookimpl</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--font-pixel);font-size:10px;color:var(--gray-pixel);padding:0 20px">
+        <span>← EXPLICIT / 代码可见</span><span>IMPLICIT / 自动装配 →</span>
+      </div>
+      <div class="cols" style="margin-top:8px">
+        <div class="brick yellow">
+          <h3>越往左</h3>
+          <ul class="tick small" style="margin-top:8px">
+            <li>行为可从代码读出，顺序完全可控；测试与多实例容易</li>
+            <li>但用户必须<b>知道</b>插件存在并手写代码</li>
+          </ul>
+        </div>
+        <div class="brick purple">
+          <h3>越往右</h3>
+          <ul class="tick small" style="margin-top:8px">
+            <li>零配置：装上就有能力；生态可发现、可聚合多实现</li>
+            <li>但「为什么会这样」变难回答；启动开销与安全面变大</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout" style="border-left-color:var(--py-green)">
+        <b>剧透：</b>它们不是互斥的。成熟项目通常是<b>分层叠加</b>——右边负责发现，左边负责装配。<span class="dim">见第 16 页。</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 10 · FLASK ===================== -->
+<section class="slide" style="--slide-accent:var(--py-yellow)">
+  <div class="kicker">Pattern ① · Flask Style</div>
+  <h2><span class="badge-n">01</span>显式调用：把装配写进代码</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">host + plugin</span># mdlite/core.py -- the whole host-side protocol
+class MdLite:
+    def use(self, ext) -&gt; "MdLite":
+        ext.init_md(self)        # order == call order
+        return self
+
+
+# mdlite_mermaid/__init__.py -- the plugin package
+class Mermaid:
+    def __init__(self, *, theme: str = "default"):
+        self.theme = theme
+
+    def init_md(self, md) -&gt; None:
+        md.registry.register_block(
+            MermaidRenderer(self.theme), origin="mermaid")</code></pre>
+        <div class="brick tint">
+          <h3>真实世界里的同款</h3>
+          <p><code>app.register_blueprint()</code> · <code>db.init_app(app)</code> ·
+          <code>app.include_router()</code> · <code>cli.add_command()</code></p>
+        </div>
+      </div>
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">user code — what is installed, in what order, at a glance</span>md = (MdLite(strict=True)
+      .use(Mermaid(theme="forest"))
+      .use(KaTeX(inline=True))
+      .use(Mentions(domain="acme.corp")))
+
+html = md.render(text)</code></pre>
+        <div class="brick green">
+          <span class="tag">PROS</span>
+          <ul class="tick good small" style="margin-top:10px">
+            <li><b>零魔法</b>：装了什么、什么顺序，代码里读得出来</li>
+            <li><b>可参数化</b>：构造函数就是插件的配置接口</li>
+            <li><b>易测试、多实例友好</b>：无全局状态</li>
+            <li><b>实现成本最低</b>：宿主侧就是一个 <code>use()</code></li>
+          </ul>
+        </div>
+        <div class="brick red">
+          <span class="tag">CONS</span>
+          <ul class="tick bad small" style="margin-top:10px">
+            <li>用户必须<b>知道插件存在</b>，没有「装上就生效」</li>
+            <li>CLI 工具、配置驱动的场景很别扭</li>
+            <li>需要一个能拿到 <code>md</code> 对象的装配点</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 11 · DJANGO ===================== -->
+<section class="slide" style="--slide-accent:var(--py-blue)">
+  <div class="kicker">Pattern ② · Django Style</div>
+  <h2><span class="badge-n">02</span>中央注册：配置说了算</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">settings.py — ops owns the order, not the author</span>MDLITE_EXTENSIONS = [
+    "mdlite_mermaid.Mermaid",
+    "acme_internal.Mentions",
+]</code></pre>
+        <pre class="sm"><code class="py"><span class="cap">mdlite/loader.py — string path to object</span>def load(md, paths: list[str]) -&gt; None:
+    for path in paths:
+        mod, _, attr = path.rpartition(".")
+        try:
+            ext_cls = getattr(import_module(mod), attr)
+        except (ImportError, AttributeError) as exc:
+            raise ImproperlyConfigured(path) from exc
+        md.use(ext_cls())</code></pre>
+        <pre class="sm"><code class="py"><span class="cap">mdlite/autodiscover.py — convention over configuration</span>for app in installed:                # import &lt;app&gt;.mdlite_ext
+    try:                             # so @register runs once
+        import_module(f"{app}.mdlite_ext")
+    except ModuleNotFoundError as exc:
+        if exc.name != f"{app}.mdlite_ext":
+            raise    # never swallow the plugin's own ImportError</code></pre>
+      </div>
+      <div class="stack">
+        <div class="brick yellow">
+          <h3>为什么用字符串而不是 import</h3>
+          <p>为了<b>打破导入循环</b>，也为了让配置能是纯数据（TOML / 环境变量 / ConfigMap），不执行 Python 就能被运维改。</p>
+        </div>
+        <div class="brick red">
+          <h3>那个 <code>except</code> 值得单独讲</h3>
+          <p>幼稚的 <code>except ImportError: pass</code> 会把插件<b>自身</b>的依赖缺失也吞掉，
+          症状是「插件装了但完全没反应」。<b>必须比对 <code>exc.name</code>。</b></p>
+        </div>
+        <div class="brick green">
+          <span class="tag">PROS</span>
+          <p><b>配置即部署</b>，多环境友好；顺序显式且集中；能被非 Python 入口驱动；启用/禁用是一行的事。</p>
+        </div>
+        <div class="brick red">
+          <span class="tag">CONS</span>
+          <p>字符串路径<b>无类型检查</b>，IDE 不跳转；倾向<b>全局单例</b>，多实例困难；import 时副作用 → 循环导入温床；测试隔离需要额外机制。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 12 · ENTRY POINTS ===================== -->
+<section class="slide" style="--slide-accent:var(--py-green)">
+  <div class="kicker">Pattern ③ · Packaging Metadata</div>
+  <h2><span class="badge-n">03</span>Entry Points：<span class="mono">pip install</span> 即生效</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">the plugin declares itself — pyproject.toml</span>[project]
+name = "mdlite-mermaid"
+dependencies = ["mdlite&gt;=2,&lt;3"]      # the compat contract
+
+[project.entry-points."mdlite.renderers"]
+mermaid = "mdlite_mermaid:MermaidRenderer"
+#  ^ name     ^ module      ^ attribute</code></pre>
+        <pre class="sm"><code class="py"><span class="cap">the host scans installed dists — no import needed</span>from importlib.metadata import entry_points   # py3.10+
+
+for ep in entry_points(group="mdlite.renderers"):
+    if ep.name in disabled:      # users must be able to opt out
+        continue
+    try:
+        cls = ep.load()          # the import happens here
+        reg.register_block(cls(), origin=_org(ep))
+    except Exception:            # one bad plugin must not kill us
+        log.exception("plugin %r failed", ep.name)</code></pre>
+      </div>
+      <div class="stack">
+        <div class="brick blue">
+          <h3>四个必须处理的工程细节</h3>
+          <ul class="tick small" style="margin-top:10px">
+            <li><b>兼容</b>：<code>group=</code> 需要 3.10+，更低版本用 <code>importlib_metadata</code> 后端口</li>
+            <li><b>惰性</b>：扫描便宜，<code>ep.load()</code> 贵——用到才 load，CLI 上是几百毫秒的差别</li>
+            <li><b>顺序</b>：返回顺序<b>不是契约</b>，需要顺序就让插件声明 <code>priority</code></li>
+            <li><b>安全</b>：<code>ep.load()</code> = 执行任意第三方代码，这是一条供应链攻击面</li>
+          </ul>
+        </div>
+        <div class="brick green">
+          <span class="tag">PROS</span>
+          <p>零配置；宿主与插件<b>零 import 耦合</b>；生态可发现（PyPI 按 group 列举）；版本区间由 pip 强制；标准库能力。</p>
+        </div>
+        <div class="brick red">
+          <span class="tag">CONS</span>
+          <p><b>隐式</b>，用户代码里看不到痕迹；调试困难；顺序不可控；启动扫描开销；开发时要 <code>pip install -e .</code> 才能被发现。</p>
+        </div>
+        <div class="callout" style="border-left-color:var(--py-green)">
+          <b>务必给开关：</b><code>--no-plugins</code> / <code>MDLITE_DISABLE=mermaid</code>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 13 · PLUGGY 1 ===================== -->
+<section class="slide" style="--slide-accent:var(--py-purple)">
+  <div class="kicker">Pattern ④ · pluggy</div>
+  <h2><span class="badge-n">04</span>pluggy：pytest 的插件内核</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/hookspecs.py — the host declares the contract</span>hookspec = pluggy.HookspecMarker("mdlite")
+
+
+class MdLiteSpec:
+    @hookspec(firstresult=True)
+    def mdlite_render_block(self, lang, code, ctx) -&gt; str | None:
+        """Return None to decline; first non-None wins."""
+
+    @hookspec
+    def mdlite_postprocess(self, html: str) -&gt; str | None:
+        """All implementations run; results are collected."""</code></pre>
+        <pre class="sm"><code class="py"><span class="cap">mdlite_mermaid/plugin.py — the implementation</span>hookimpl = pluggy.HookimplMarker("mdlite")
+
+
+class MermaidPlugin:
+    @hookimpl
+    def mdlite_render_block(self, lang, code, ctx):
+        if lang != "mermaid":
+            return None          # decline, let the next one try
+        return f'&lt;div class="mermaid"&gt;{escape(code)}&lt;/div&gt;'</code></pre>
+      </div>
+      <div class="stack">
+        <div class="brick purple">
+          <h3>核心心智模型</h3>
+          <p>宿主声明 <b>hookspec</b>（签名 = 契约），插件提供 <b>hookimpl</b>（同名函数）。
+          调用 <code>pm.hook.xxx()</code> 时，pluggy 把<b>所有</b>实现按规则组织起来跑一遍。</p>
+        </div>
+        <div class="brick yellow">
+          <h3>被低估的杀手锏：按名注入</h3>
+          <p>hookimpl <b>只声明自己需要的参数</b>——不关心 <code>ctx</code> 就不写。
+          于是宿主<b>新增 hookspec 参数不会破坏任何老插件</b>。<br>
+          <span class="dim">这是 API 演进上的巨大自由度，也是自己手写钩子最容易漏掉的一点。</span></p>
+        </div>
+        <div class="brick blue">
+          <h3>调用语义是可声明的</h3>
+          <ul class="tick small" style="margin-top:10px">
+            <li>默认：<b>所有</b>实现都跑，结果收集成 list</li>
+            <li><code>firstresult=True</code>：第一个非 <code>None</code> 胜出</li>
+            <li><code>tryfirst</code> / <code>trylast</code>：插件声明自己的相对位置</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 14 · PLUGGY 2 ===================== -->
+<section class="slide" style="--slide-accent:var(--py-purple)">
+  <div class="kicker">Pattern ④ · Wiring &amp; Trade-offs</div>
+  <h2>装配，以及自己实现会漏掉的东西</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/manager.py — discovery and explicit registration, unified</span>def build_manager(*, extra=()) -&gt; pluggy.PluginManager:
+    pm = pluggy.PluginManager("mdlite")
+    pm.add_hookspecs(MdLiteSpec)              # 1. the contract
+    pm.load_setuptools_entrypoints("mdlite")  # 2. auto-discover
+    for plugin in extra:
+        pm.register(plugin)                   # 3. explicit extras
+    pm.check_pending()                        # 4. impl w/o spec?
+    return pm</code></pre>
+        <pre class="sm"><code class="py"><span class="cap">hookwrapper — cross-cutting concerns become plugins too</span>@hookimpl(hookwrapper=True)
+def mdlite_render_block(lang):
+    t0 = time.perf_counter()
+    outcome = yield              # every other impl runs here
+    metrics.observe(lang, time.perf_counter() - t0)
+    # can even rewrite it: outcome.force_result(...)</code></pre>
+        <div class="callout" style="border-left-color:var(--py-purple)">
+          <b>注意第 2 行和第 3 行同时存在</b>——pluggy 把「自动发现」和「显式注册」统一在同一个模型下。
+        </div>
+      </div>
+      <div class="stack">
+        <div class="brick yellow">
+          <h3>拼写保护与可观测性</h3>
+          <p><code>check_pending()</code> 会在启动时抓出 <code>mdlite_render_blcok</code> 这类拼错——
+          否则它就是<b>永远不被调用、也永远不报错</b>的那类 bug。<br>
+          <code>pm.enable_tracing()</code> / <code>pm.list_name_plugin()</code>：<code>pytest --trace-config</code> 就是这么来的。</p>
+        </div>
+        <div class="brick green">
+          <span class="tag">PROS</span>
+          <p>多实现聚合是一等公民；顺序可声明；按名注入让 API 可演进；签名校验；发现方式可插拔。<br>
+          <span class="dim">pytest / tox / devpi / datasette 久经考验。</span></p>
+        </div>
+        <div class="brick red">
+          <span class="tag">CONS</span>
+          <p>概念负担（spec / impl / wrapper / firstresult）；<b>控制流隐式</b>，跳不到实现；类型不友好；hook 必须带项目名前缀；小库上是<b>明显的过度设计</b>。</p>
+        </div>
+        <div class="callout" style="border-left-color:var(--py-purple)">
+          只有一个扩展维度？<b>一个 dict 就够了，别上 pluggy。</b>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 15 · COMPARISON ===================== -->
+<section class="slide">
+  <div class="kicker">Side by Side</div>
+  <h2>四种范式对比</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <table class="cmp">
+      <thead>
+        <tr><th style="width:120px">维度</th><th>① Flask 显式调用</th><th>② Django 中央注册</th><th>③ Entry Points</th><th>④ pluggy</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>装配位置</th><td>用户代码</td><td>配置文件</td><td>包元数据</td><td>元数据 + 代码</td></tr>
+        <tr><th>可见性</th><td><span class="pill g">读代码即知</span></td><td><span class="pill g">读配置即知</span></td><td><span class="pill r">需专门查询</span></td><td><span class="pill y">需 trace / list</span></td></tr>
+        <tr><th>顺序控制</th><td><span class="pill g">调用顺序</span></td><td><span class="pill g">清单顺序</span></td><td><span class="pill r">不保证</span></td><td><span class="pill g">tryfirst/trylast</span></td></tr>
+        <tr><th>多实现聚合</th><td><span class="pill y">自己实现</span></td><td><span class="pill y">自己实现</span></td><td><span class="pill y">自己实现</span></td><td><span class="pill g">内建</span></td></tr>
+        <tr><th>插件参数化</th><td><span class="pill g">构造函数</span></td><td><span class="pill y">配置字典</span></td><td><span class="pill r">需额外机制</span></td><td><span class="pill y">configure hook</span></td></tr>
+        <tr><th>零配置生效</th><td><span class="pill r">否</span></td><td><span class="pill r">否</span></td><td><span class="pill g">是</span></td><td><span class="pill g">是</span></td></tr>
+        <tr><th>测试隔离</th><td><span class="pill g">天然</span></td><td><span class="pill r">需 override</span></td><td><span class="pill y">需禁用开关</span></td><td><span class="pill g">独立 pm</span></td></tr>
+        <tr><th>静态类型</th><td><span class="pill g">完整</span></td><td><span class="pill r">字符串路径</span></td><td><span class="pill r">字符串路径</span></td><td><span class="pill r">弱</span></td></tr>
+        <tr><th>实现成本</th><td><span class="pill g">最低</span></td><td><span class="pill y">中</span></td><td><span class="pill y">中</span></td><td><span class="pill r">高（概念）</span></td></tr>
+        <tr><th>典型代表</th><td>Flask, FastAPI, Click</td><td>Django, Scrapy, Celery</td><td>flake8, mkdocs, pelican</td><td>pytest, tox, datasette</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 16 · LAYERING ===================== -->
+<section class="slide" style="--slide-accent:var(--py-indigo)">
+  <div class="kicker">Composition</div>
+  <h2>它们不是四选一，而是四层</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols-4-6">
+      <div class="stack">
+        <div class="lane">
+          <div class="node p" style="text-align:center">③ Entry Points<br><span class="dim" style="font-weight:400">发现：装了哪些插件</span></div>
+          <div class="arrow" style="text-align:center">↓</div>
+          <div class="node b" style="text-align:center">② 中央配置<br><span class="dim" style="font-weight:400">筛选与排序：启用哪些、什么顺序</span></div>
+          <div class="arrow" style="text-align:center">↓</div>
+          <div class="node k" style="text-align:center">① 显式 <code>use()</code><br><span class="dim" style="font-weight:400">装配：构造实例，注入参数</span></div>
+          <div class="arrow" style="text-align:center">↓</div>
+          <div class="node g" style="text-align:center">④ pluggy / Registry<br><span class="dim" style="font-weight:400">调用：聚合多实现，跑 hook</span></div>
+        </div>
+      </div>
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/bootstrap.py — all four, cooperating</span>def build(config: Config) -&gt; MdLite:
+    md = MdLite(**config.options)
+
+    # (3) discover: names only, no import yet
+    available = {ep.name: ep for ep in entry_points(group=GROUP)}
+
+    # (2) configuration decides which ones, and in what order
+    for name in config.enabled or available:
+        if name in config.disabled:
+            continue
+        ep = available.get(name) or _fail(name)
+
+        # (1) explicit wiring, each plugin gets its own options
+        md.use(ep.load()(**config.plugin_options.get(name, {})))
+
+    return md</code></pre>
+        <div class="callout" style="border-left-color:var(--py-indigo)">
+          <b>这就是 pytest / mkdocs 的实际形态：</b>自动发现给体验，显式配置给控制，<b>两者都要，缺一不可</b>。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 17 · PRODUCTION ===================== -->
+<section class="slide" style="--slide-accent:var(--py-orange)">
+  <div class="kicker">Production</div>
+  <h2>第三方代码 = 会出错的代码</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="stack">
+        <pre class="sm"><code class="py"><span class="cap">mdlite/safe.py — failure isolation with an escape hatch</span>def call_renderer(r, lang, code, ctx, *, strict: bool) -&gt; str:
+    try:
+        html = r.render(code, ctx)
+    except PluginError as exc:          # declared, recoverable
+        ctx.logger.warning("%s declined %r", r, lang)
+        return default_fence(lang, code)
+    except Exception:                   # a bug inside the plugin
+        if strict:
+            raise                       # dev / CI: fail loudly
+        ctx.logger.exception("plugin %s crashed", r)
+        return default_fence(lang, code)   # prod: degrade
+
+    if not isinstance(html, str):       # never trust the return
+        raise TypeError(f"{r}.render must return str")
+    return html</code></pre>
+        <div class="brick red">
+          <h3>报错信息里必须有「谁」</h3>
+          <p><code>plugin mdlite-mermaid==0.3.1 crashed</code>，而不是一个指向你自己源码的裸 traceback。
+          <span class="dim">否则所有 issue 都会提到你的仓库。</span></p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="brick blue">
+          <h3>发布插件 API 之前的六项检查</h3>
+          <ul class="tick small" style="margin-top:12px">
+            <li><b>版本</b>：暴露 <code>API_VERSION</code>，写清什么算 breaking，走 deprecation 周期</li>
+            <li><b>可观测</b>：一条命令列出插件名、版本、来源包、挂了哪些扩展点</li>
+            <li><b>可禁用</b>：「关掉插件还复现吗」必须是一个能被回答的问题</li>
+            <li><b>测试工具</b>：给插件作者 pytest fixture 和契约一致性套件</li>
+            <li><b>官方样板</b>：文档里那个例子就是所有人抄的模板，把它写好</li>
+            <li><b>惰性</b>：发现不 import，import 不初始化，初始化不做 IO</li>
+          </ul>
+        </div>
+        <div class="callout" style="border-left-color:var(--py-orange)">
+          <b>元规则：</b>你自己的一部分功能也应该<b>用插件 API 实现</b>。pytest 的 <code>capture</code>、<code>fixtures</code> 都是内建插件——这保证了 API 真的够用。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 18 · DECISION ===================== -->
+<section class="slide">
+  <div class="kicker">Decision</div>
+  <h2>我该选哪个？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="stack" style="gap:14px">
+      <div class="brick tint" style="display:flex;align-items:center;gap:18px">
+        <div class="badge-n" style="background:var(--py-red)">Q0</div>
+        <div style="flex:1"><b>扩展维度只有一个，且候选实现有限？</b>
+          <span class="dim"> → 不要插件系统。一个 <code>dict[str, Callable]</code> + 文档说明如何注册，就够了。</span></div>
+      </div>
+      <div class="brick yellow" style="display:flex;align-items:center;gap:18px">
+        <div class="badge-n" style="background:var(--py-yellow);color:var(--ink)">Q1</div>
+        <div style="flex:1"><b>用户是开发者，且有明确的「应用装配阶段」？</b>
+          <span class="dim"> → ① <b>Flask 式显式调用</b>。最简单、最可控，且随时能往上加发现机制。</span></div>
+      </div>
+      <div class="brick blue" style="display:flex;align-items:center;gap:18px">
+        <div class="badge-n" style="background:var(--py-blue)">Q2</div>
+        <div style="flex:1"><b>同一份代码要跑多套配置，或用户是运维/非程序员？</b>
+          <span class="dim"> → ② <b>中央注册</b>。配置清单驱动，顺序显式，可回滚。</span></div>
+      </div>
+      <div class="brick green" style="display:flex;align-items:center;gap:18px">
+        <div class="badge-n" style="background:var(--py-green)">Q3</div>
+        <div style="flex:1"><b>你在做 CLI 工具，或希望「装上即生效」形成生态？</b>
+          <span class="dim"> → ③ <b>Entry Points</b>。配一个 <code>plugins</code> 子命令和禁用开关。</span></div>
+      </div>
+      <div class="brick purple" style="display:flex;align-items:center;gap:18px">
+        <div class="badge-n" style="background:var(--py-purple)">Q4</div>
+        <div style="flex:1"><b>多个插件需要对同一事件<u>都</u>发言，且 hook 会持续增长？</b>
+          <span class="dim"> → ④ <b>pluggy</b>。别自己重写一遍聚合、排序和 wrapper。</span></div>
+      </div>
+      <div class="callout">
+        <b>而且——先从 ① 开始，几乎总是对的。</b>它是唯一一个能在事后无痛升级到 ②③④ 的起点：后三者最终都会调用某个 <code>use()</code> / <code>register()</code>。
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+<!-- ===================== 19 · TAKEAWAYS + QA ===================== -->
+<section class="slide" style="--slide-accent:var(--py-yellow)">
+  <div class="kicker">Takeaways</div>
+  <h2>带走四句话</h2>
+  <div class="rule"></div>
+  <div class="body" style="display:flex;flex-direction:column">
+    <div class="cols" style="align-items:start;height:auto">
+      <div class="stack">
+        <div class="brick yellow" style="display:flex;gap:18px;align-items:flex-start">
+          <span class="px" style="font-size:24px;color:var(--py-orange)">1</span>
+          <div><b style="font-size:20px">用户在 monkeypatch 什么，那里就该是扩展点。</b>
+            <p style="margin-top:6px">去读你的 issue 区和 GitHub 代码搜索——需求已经写在那里了。</p></div>
+        </div>
+        <div class="brick yellow" style="display:flex;gap:18px;align-items:flex-start">
+          <span class="px" style="font-size:24px;color:var(--py-orange)">2</span>
+          <div><b style="font-size:20px">先设计接口，再选加载机制。</b>
+            <p style="margin-top:6px">Protocol + 冻结的 Context + 显式 Registry。接口错了，pluggy 也救不回来。</p></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="brick yellow" style="display:flex;gap:18px;align-items:flex-start">
+          <span class="px" style="font-size:24px;color:var(--py-orange)">3</span>
+          <div><b style="font-size:20px">四种范式是「显式 ↔ 隐式」的取舍，而且可以叠成四层。</b>
+            <p style="margin-top:6px">发现 → 筛选 → 装配 → 调用。</p></div>
+        </div>
+        <div class="brick yellow" style="display:flex;gap:18px;align-items:flex-start">
+          <span class="px" style="font-size:24px;color:var(--py-orange)">4</span>
+          <div><b style="font-size:20px">成本在 API 契约上，不在实现上。</b>
+            <p style="margin-top:6px"><code>use()</code> 十行就能写完；十年的兼容性义务写不完。<br>
+            把隐式变回可见：列表、日志、开关、错误里的插件名。</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="brick" style="margin-top:auto;background:var(--ink);color:#fff;text-align:center;padding:30px">
+      <div class="px" style="font-size:30px;margin-bottom:14px">THANKS &amp; Q&amp;A</div>
+      <p style="color:rgba(255,255,255,.8);font-size:17px">
+        Python 包的插件系统设计 · PyCon China 2026 · slides / code / @YOUR_HANDLE
+      </p>
+    </div>
+  </div>
+  <div class="foot"><span>Python 包的插件系统设计</span><span class="num"></span></div>
+</section>
+
+</div></div>
+<div id="help">← → SPACE · O OVERVIEW · F FULLSCREEN</div>
+
+<script>
+/* ============================================================
+   1. Minimal Python highlighter (no CDN dependency)
+   ============================================================ */
+(function highlightAll(){
+  const KW = new Set(("def class return if elif else for while import from as with try except finally "+
+    "raise yield lambda pass break continue in not and or is None True False async await global "+
+    "nonlocal assert del match case").split(" "));
+  const BIF = new Set(("print len str int float bool dict list set tuple type isinstance getattr setattr "+
+    "hasattr super self cls Exception TypeError ValueError AttributeError ImportError "+
+    "ModuleNotFoundError frozenset Protocol Callable Mapping property staticmethod classmethod").split(" "));
+
+  const RULES = [
+    ["t-com", /^#[^\n]*/],
+    ["t-str", /^(?:[fFrRbBuU]{0,2})(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')/],
+    ["t-dec", /^@[A-Za-z_][\w.]*/],
+    ["t-num", /^\d[\w.]*/],
+  ];
+  const WORD = /^[A-Za-z_]\w*/;
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  function tokenize(src){
+    let out = "", i = 0;
+    while(i < src.length){
+      const rest = src.slice(i);
+      let matched = false;
+      for(const [cls, re] of RULES){
+        const m = rest.match(re);
+        if(m){ out += `<span class="${cls}">${esc(m[0])}</span>`; i += m[0].length; matched = true; break; }
+      }
+      if(matched) continue;
+      const w = rest.match(WORD);
+      if(w){
+        const word = w[0];
+        const after = rest.slice(word.length);
+        const prev = src.slice(0, i);
+        let cls = null;
+        if(KW.has(word)) cls = "t-kw";
+        else if(/^(def|class)\s+$/.test(prev.slice(-10).match(/(?:def|class)\s+$/)?.[0] || "")) cls = "t-cls";
+        else if(BIF.has(word)) cls = "t-bif";
+        else if(/^\s*\(/.test(after)) cls = "t-fn";
+        else if(/^[A-Z]/.test(word)) cls = "t-cls";
+        out += cls ? `<span class="${cls}">${esc(word)}</span>` : esc(word);
+        i += word.length; continue;
+      }
+      const ch = src[i];
+      out += /[=+\-*/<>!%|&^~]/.test(ch) ? `<span class="t-op">${esc(ch)}</span>` : esc(ch);
+      i++;
+    }
+    return out;
+  }
+
+  document.querySelectorAll("code.py").forEach(el => {
+    const cap = el.querySelector(".cap");
+    const capHTML = cap ? cap.outerHTML : "";
+    if(cap) cap.remove();
+    el.innerHTML = capHTML + tokenize(el.textContent.replace(/^\n/, ""));
+  });
+})();
+
+/* ============================================================
+   2. Auto-fit — no slide may ever overflow its 1280x720 brick
+   ============================================================ */
+(function autofit(){
+  document.body.classList.add("measuring");
+
+  // (a) shrink each code block until its longest line fits the column
+  document.querySelectorAll("pre").forEach(pre => {
+    const code = pre.querySelector("code.py");
+    if(!code) return;
+    let fs = parseFloat(getComputedStyle(code).fontSize);
+    let guard = 0;
+    while(code.scrollWidth > pre.clientWidth && fs > 11 && guard++ < 40){
+      fs -= 0.5;
+      code.style.fontSize = fs + "px";
+    }
+  });
+
+  // (b) scale down any slide body whose content runs past the bottom
+  const bottomOf = el => {
+    const top = el.getBoundingClientRect().top;
+    let max = 0;
+    for(const child of el.querySelectorAll("*")){
+      const r = child.getBoundingClientRect();
+      if(r.height) max = Math.max(max, r.bottom - top);
+    }
+    return max;
+  };
+  document.querySelectorAll(".slide .body").forEach(body => {
+    const avail = body.clientHeight;
+    const used = bottomOf(body);
+    if(used > avail + 1 && avail > 0){
+      const k = Math.max(0.6, avail / used);
+      body.style.transformOrigin = "top left";
+      body.style.transform = "scale(" + k + ")";
+      body.style.width = (100 / k) + "%";
+    }
+  });
+
+  document.body.classList.remove("measuring");
+})();
+
+/* ============================================================
+   3. Deck navigation
+   ============================================================ */
+(function deck(){
+  const stage = document.getElementById("stage");
+  const deckEl = document.getElementById("deck");
+  const slides = [...document.querySelectorAll(".slide")];
+  const bar = document.getElementById("bar");
+  const total = slides.length;
+  let idx = 0;
+
+  slides.forEach((s, i) => {
+    const n = s.querySelector(".foot .num");
+    if(n) n.textContent = String(i + 1).padStart(2, "0") + " / " + total;
+    s.addEventListener("click", () => {
+      if(document.body.classList.contains("ov")){ go(i); toggleOverview(false); }
+    });
+  });
+
+  function go(n){
+    idx = Math.max(0, Math.min(total - 1, n));
+    slides.forEach((s, i) => s.classList.toggle("active", i === idx));
+    bar.style.width = ((idx + 1) / total * 100) + "%";
+    if(location.hash !== "#" + (idx + 1)) history.replaceState(null, "", "#" + (idx + 1));
+  }
+
+  function fit(){
+    if(document.body.classList.contains("ov")) return;
+    const pad = 40;
+    const s = Math.min((stage.clientWidth - pad) / 1280, (stage.clientHeight - pad) / 720);
+    deckEl.style.transform = "scale(" + s + ")";
+  }
+
+  function toggleOverview(force){
+    const on = force !== undefined ? force : !document.body.classList.contains("ov");
+    document.body.classList.toggle("ov", on);
+    if(on) deckEl.style.transform = "none";
+    else { fit(); slides[idx].scrollIntoView({block:"center"}); }
+  }
+
+  addEventListener("keydown", e => {
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key){
+      case "ArrowRight": case "ArrowDown": case " ": case "PageDown":
+        e.preventDefault(); go(idx + 1); break;
+      case "ArrowLeft": case "ArrowUp": case "PageUp":
+        e.preventDefault(); go(idx - 1); break;
+      case "Home": e.preventDefault(); go(0); break;
+      case "End": e.preventDefault(); go(total - 1); break;
+      case "o": case "O": e.preventDefault(); toggleOverview(); break;
+      case "Escape": toggleOverview(false); break;
+      case "f": case "F":
+        e.preventDefault();
+        document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+        break;
+    }
+  });
+
+  addEventListener("resize", fit);
+  go(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1));
+  fit();
+})();
+</script>
+</body>
+</html>

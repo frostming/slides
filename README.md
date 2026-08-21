@@ -23,6 +23,10 @@ Slides & code for my talks, using [Slidev](https://github.com/slidevjs/slidev)!
 
 - `zh` [Python 打包生态系统的最新进展](https://slides.fming.dev/2025-pycon-peps/)
 
+### 2026
+
+- `zh` [Python 包的插件系统设计](https://slides.fming.dev/python-plugin-system/)
+
 <!-- TODO: Add your talk to here. -->
 
 ### Development
@@ -34,6 +38,10 @@ pnpm dev
 visit <http://localhost:3030>
 
 Edit the `<your talk folder>/src/slides.md` to see the changes.
+
+Hand-written decks that are not built by Slidev live in `static/<slug>/index.html`.
+They are copied verbatim to `dist/<slug>/` at build time, so they get the same
+`https://slides.fming.dev/<slug>/` URL and are listed in the catalogue too.
 
 Learn more about Slidev at the [documentation](https://sli.dev/).
 

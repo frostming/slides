@@ -5,9 +5,10 @@
   "packageManager": "pnpm@9.5.0",
   "scripts": {
     "dev": "pnpm run picker dev --open",
-    "build": "rimraf dist && pnpm run picker build && pnpm run build:index",
-    "build:all": "rimraf dist && pnpm -r run build && cp -r archive/* dist/ && pnpm run build:index",
+    "build": "rimraf dist && pnpm run picker build && pnpm run build:static && pnpm run build:index",
+    "build:all": "rimraf dist && pnpm -r run build && cp -r archive/* dist/ && pnpm run build:static && pnpm run build:index",
     "build:index": "esno scripts/build-index.ts",
+    "build:static": "esno scripts/copy-static.ts",
     "export": "pnpm run picker export",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
