@@ -3,8 +3,8 @@
    Ported from the original hand-written HTML deck.
    ============================================================ */
 :root {
-  --bg-base: #3daa84;
-  --bg-dot: #4fb089;
+  --bg-base: #3eab84;
+  --bg-dot: #5bb472;
   --bg-deep: #2a7f61;
   --paper: #ffffff;
   --paper-muted: #edf8f3;
@@ -32,16 +32,16 @@
 }
 
 /* ---------- slide shell ----------
-   Each slide is a white "brick" with a coloured stud strip on top. The
-   surrounding page keeps the conference's dotted green backdrop. */
-/* the theme lays .slidev-layout out as a grid, which stretches every child
-   into an equal row — override it with a more specific selector */
+   Mirrors the official PyCon China 2026 deck template: a dotted green band
+   top and bottom, each cut off by a black rule, with the content on white
+   in between. Geometry is the template's, scaled from 1920x1080 to 1280x720.
+   ============================================================ */
 .slidev-layout.brick-slide {
   /* NB: do not set --slide-accent here — this selector outweighs .accent-*,
      and the fallback already lives on :root */
   display: flex !important;
   flex-direction: column;
-  padding: 52px 52px 38px;
+  padding: 0;
   background: var(--paper);
   border: 3px solid var(--ink);
   font-family: var(--font-body);
@@ -49,32 +49,70 @@
   overflow: hidden;
 }
 
-.brick-slide::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 14px;
-  background: var(--slide-accent);
-  border-bottom: 3px solid var(--ink);
+/* the template's dotted green: 31px dots on a 63px pitch at 1920 wide */
+.dots {
+  background-color: var(--bg-base);
+  background-image: radial-gradient(circle, var(--bg-dot) 10.3px, transparent 10.4px);
+  background-size: 42px 42px;
 }
 
-/* the "studs" on top of every brick */
-.brick-slide::after {
-  content: '';
-  position: absolute;
-  top: 14px;
-  left: 44px;
-  width: 210px;
-  height: 12px;
-  background: radial-gradient(
-    circle at 15px center,
-    color-mix(in srgb, var(--slide-accent) 72%, #000) 0 7px,
-    transparent 7px
-  );
-  background-size: 70px 12px;
-  opacity: 0.85;
+.conf-bar {
+  flex: none;
+  height: 42px;
+  border-bottom: 3px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 22px;
+}
+
+.conf-mark {
+  text-align: right;
+  line-height: 1.25;
+}
+
+.conf-word {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 1px;
+  white-space: pre;
+  text-shadow:
+    1px 1px 0 var(--ink), -1px 1px 0 var(--ink),
+    1px -1px 0 var(--ink), -1px -1px 0 var(--ink);
+}
+
+.conf-theme {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: #fff;
+  margin-top: 3px;
+  text-shadow: 1px 1px 0 rgba(26, 26, 26, 0.55);
+}
+
+/* the white stage; the accent rule under the black one identifies the slide */
+.slide-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 52px 10px;
+  border-top: 4px solid var(--slide-accent);
+}
+
+.conf-foot {
+  flex: none;
+  height: 24px;
+  border-top: 3px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(26, 26, 26, 0.5);
 }
 
 /* accent colour per slide, set via frontmatter `class: accent-red` */
@@ -103,7 +141,7 @@
      stay a plain `##` in Markdown and still hold an inline badge */
   position: relative;
   margin: 0;
-  padding-bottom: 48px;
+  padding-bottom: 42px;
   font-weight: 800;
   letter-spacing: -0.3px;
   color: var(--ink);
@@ -132,7 +170,7 @@
   content: '';
   position: absolute;
   left: 0;
-  bottom: 22px;
+  bottom: 18px;
   width: 96px;
   height: 8px;
   background: var(--slide-accent);
@@ -141,29 +179,56 @@
 .body {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.body.vcenter {
+/* Centre a slide's content in the space left under the title. `center: true`
+   on the layout would centre the heading too, which reads as a mistake. */
+.fill {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 18px;
 }
 
+/* inside a .fill the tracks size to their content rather than stretching */
+.fill > .cols,
+.fill > .cols3,
+.fill > .cols-6-4,
+.fill > .cols-4-6,
+.fill > .cols-5-4,
+.fill > .cols-4-5 { height: auto; }
+
+.body.vcenter {
+  justify-content: center;
+  gap: 18px;
+}
+
+.body.vcenter > .cols,
+.body.vcenter > .cols3,
+.body.vcenter > .cols-6-4,
+.body.vcenter > .cols-4-6 { height: auto; }
+
 /* ---------- layout tracks ---------- */
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 100%; }
 .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .cols-6-4 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; height: 100%; }
 .cols-4-6 { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; height: 100%; }
+/* a gentler split, for two code blocks of only slightly different width */
+.cols-5-4 { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; height: 100%; }
+.cols-4-5 { display: grid; grid-template-columns: 1fr 1.25fr; gap: 20px; height: 100%; }
 
 /* a grid item's automatic min-width is its min-content width, which a
    `white-space: pre` block would blow up — pin it so columns stay put */
-.cols > *, .cols3 > *, .cols-6-4 > *, .cols-4-6 > * { min-width: 0; }
+.cols > *, .cols3 > *, .cols-6-4 > *, .cols-4-6 > *, .cols-5-4 > *, .cols-4-5 > * { min-width: 0; }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   min-height: 0;
   min-width: 0;
 }
@@ -244,6 +309,9 @@
 .bad li::before { background: var(--py-red); }
 
 .small li { font-size: 17px; margin-bottom: 9px; }
+/* for cards that carry two lists on one slide */
+.tight li { margin-bottom: 5px; }
+.brick.compact h3 { margin-bottom: 4px; }
 
 .plain li { padding-left: 20px; }
 .plain li::before {
@@ -295,7 +363,7 @@
   background: var(--ink);
   border: 3px solid var(--ink);
   box-shadow: 0 var(--brick-depth) 0 rgba(26, 26, 26, 0.3);
-  padding: 14px 16px;
+  padding: 12px 16px;
   overflow: hidden;
 }
 
@@ -322,8 +390,12 @@
   padding: 0 !important;
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: 17.5px;
-  line-height: 1.55;
+  /* One size for every code block on every slide — deliberately not scaled to
+     fit its container, so type stays consistent across the deck.
+     The theme's own .slidev-code rule has equal specificity and wins on
+     order, hence !important. */
+  font-size: 16px !important;
+  line-height: 1.55 !important;
 }
 
 .code-block pre.slidev-code code {
@@ -331,9 +403,6 @@
   display: block;
 }
 
-/* shrink the type so a long line still fits its column */
-.code-sm pre.slidev-code { font-size: 16px; line-height: 1.5; }
-.code-xs pre.slidev-code { font-size: 14.5px; line-height: 1.45; }
 
 /* ---------- table ---------- */
 .slidev-layout .cmp table {
@@ -466,22 +535,6 @@
   margin: 0;
 }
 
-/* ---------- footer ---------- */
-.slidev-layout .foot {
-  position: absolute;
-  left: 52px;
-  right: 52px;
-  bottom: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-pixel);
-  font-size: 9px;
-  color: var(--gray-pixel);
-  letter-spacing: 0.5px;
-}
-
-.slidev-layout .foot .num { color: var(--ink); }
 
 /* ---------- closing slide ---------- */
 .takeaways .body {
@@ -505,4 +558,136 @@
 .brick.thanks p {
   color: rgba(255, 255, 255, 0.8);
   font-size: 17px;
+}
+
+/* ---------- prose inside a slide body ----------
+   Paragraphs written directly in Markdown, outside any card. */
+.body > p,
+.stack > p,
+.body > div > p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.body > p strong,
+.stack > p strong,
+.body > div > p strong { color: var(--ink); font-weight: 800; }
+
+/* a lead line: the one-sentence claim a slide turns on */
+.body > p.lead,
+.body .lead {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+/* ---------- blockquote ---------- */
+.slidev-layout blockquote {
+  margin: 0;
+  border-left: 10px solid var(--slide-accent);
+  border-top: 3px solid var(--ink);
+  border-right: 3px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
+  background: var(--paper-muted);
+  box-shadow: 0 5px 0 rgba(26, 26, 26, 0.18);
+  padding: 20px 24px;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+}
+
+.slidev-layout blockquote p { margin: 0 0 12px; }
+.slidev-layout blockquote p:last-child { margin: 0; }
+
+/* the attribution line the quote ends on */
+.slidev-layout blockquote p:last-child {
+  text-align: right;
+  color: var(--gray-pixel);
+  font-weight: 700;
+}
+
+/* a centred, width-limited column for slides that carry a single block */
+.solo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+/* the title slide has no bottom-anchored content, so centre it as a block */
+.slidev-layout.brick-slide.cover {
+  justify-content: center;
+}
+
+/* ---------- QR card (self-intro slide) ---------- */
+.brick.qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* the SVG is transparent; a white quiet zone keeps it reliably scannable
+   against the card's tinted background */
+.qr-card img {
+  display: block;
+  width: 190px;
+  height: 190px;
+  padding: 10px;
+  background: #fff;
+}
+
+.qr-card .url {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  text-align: center;
+  word-break: break-all;
+}
+
+/* the self-intro list carries only a few lines, so let it breathe */
+.intro li {
+  font-size: 21px;
+  margin-bottom: 18px;
+}
+
+/* ---------- cover ----------
+   The template artwork already carries the wordmark and the brick border, so
+   the layout only has to keep the text inside its white panel:
+   x 377–1219, y 80–625 at 1280x720, wordmark ending around y 207. */
+.slidev-layout.cover-slide {
+  display: flex !important;
+  flex-direction: column;
+  padding: 0;
+  border: 3px solid var(--ink);
+  background: url('/cover.jpg') center / cover no-repeat;
+  font-family: var(--font-body);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.cover-content {
+  position: absolute;
+  left: 424px;
+  right: 96px;
+  top: 258px;
+}
+
+.cover-content h1 {
+  font-size: 54px;
+  line-height: 1.18;
+  margin: 0 0 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.cover-content .sub {
+  font-size: 22px;
+  color: var(--ink-soft);
+  margin: 0;
 }

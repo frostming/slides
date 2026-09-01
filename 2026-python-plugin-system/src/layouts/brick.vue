@@ -3,19 +3,17 @@ import { useResizeObserver } from '@vueuse/core'
 import { nextTick, onMounted, ref } from 'vue'
 
 /**
- * The deck's standard slide: a white brick with a coloured stud strip, an
- * all-caps kicker, the title (written as `##` in Markdown), and a footer.
+ * The deck's standard slide, framed like the official PyCon China 2026
+ * template: a dotted green band top and bottom, black rules, white stage.
  *
  * Frontmatter:
  *   layout: brick
  *   kicker: 01 · Why Extend
  *   accent: red          # yellow | orange | red | purple | indigo | blue | green
- *   center: true         # vertically centre the body
  */
 defineProps<{
   kicker?: string
   accent?: string
-  center?: boolean
 }>()
 
 const body = ref<HTMLElement>()
@@ -36,6 +34,7 @@ function fit() {
   el.style.transform = ''
   el.style.width = ''
 
+  // scale the whole body down if the content runs past the bottom
   const avail = el.clientHeight
   if (avail > 0) {
     const top = el.getBoundingClientRect().top
@@ -70,15 +69,22 @@ useResizeObserver(body, fit)
 
 <template>
   <div class="slidev-layout brick-slide" :class="accent ? `accent-${accent}` : ''">
-    <div v-if="kicker" class="kicker">
-      {{ kicker }}
+    <div class="conf-bar dots">
+      <ConfMark />
     </div>
-    <div ref="body" class="body" :class="{ vcenter: center }">
-      <slot />
+
+    <div class="slide-stage">
+      <div v-if="kicker" class="kicker">
+        {{ kicker }}
+      </div>
+      <div ref="body" class="body">
+        <slot />
+      </div>
     </div>
-    <div class="foot">
+
+    <div class="conf-foot dots">
       <span>Python 包的插件系统设计</span>
-      <span class="num">{{ String($slidev.nav.currentPage).padStart(2, '0') }} / {{ $slidev.nav.total }}</span>
+      <span>{{ String($slidev.nav.currentPage).padStart(2, '0') }} / {{ $slidev.nav.total }}</span>
     </div>
   </div>
 </template>

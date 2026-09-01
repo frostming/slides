@@ -1,21 +1,16 @@
 <script setup lang="ts">
-/** Title slide: the pixel logo row, the talk title, and the section chips. */
+/**
+ * Title slide. Uses the official template's cover artwork as the background
+ * and places the talk title inside its white panel, below the printed
+ * PYCON CHINA 2026 wordmark.
+ */
 defineProps<{ accent?: string }>()
 </script>
 
 <template>
-  <div class="slidev-layout brick-slide cover" :class="accent ? `accent-${accent}` : ''">
-    <div class="cover-logo-row">
-      <i style="background: var(--py-blue)" />
-      <i style="background: var(--py-yellow)" />
-      <i style="background: var(--py-green)" />
-      <i style="background: var(--py-red)" />
-      <i style="background: var(--py-purple)" />
-    </div>
-    <slot />
-    <div class="foot">
-      <span>Python 包的插件系统设计</span>
-      <span class="num">{{ String($slidev.nav.currentPage).padStart(2, '0') }} / {{ $slidev.nav.total }}</span>
+  <div class="slidev-layout cover-slide">
+    <div class="cover-content">
+      <slot />
     </div>
   </div>
 </template>
