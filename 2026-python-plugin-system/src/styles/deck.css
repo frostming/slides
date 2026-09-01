@@ -27,6 +27,10 @@
   --font-body: 'AlibabaPuHuiTi', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
 
+  /* one size for every run of prose: list items, card copy, callouts,
+     quotes. Headings and chrome scale off it by hand. */
+  --fs-body: 19px;
+
   --brick-depth: 6px;
   --slide-accent: var(--py-blue);
 }
@@ -96,7 +100,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px 52px 10px;
+  padding: 16px 52px 8px;
   border-top: 4px solid var(--slide-accent);
 }
 
@@ -152,7 +156,7 @@
 
 .slidev-layout h3 {
   margin: 0 0 10px;
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--ink);
 }
@@ -259,7 +263,7 @@
 
 .brick p {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--ink-soft);
 }
@@ -286,7 +290,7 @@
 }
 
 .slidev-layout li {
-  font-size: 19px;
+  font-size: var(--fs-body);
   line-height: 1.55;
   margin: 0 0 12px;
   padding-left: 30px;
@@ -308,9 +312,9 @@
 .good li::before { background: var(--py-green); }
 .bad li::before { background: var(--py-red); }
 
-.small li { font-size: 17px; margin-bottom: 9px; }
+.small li { font-size: var(--fs-body); margin-bottom: 9px; }
 /* for cards that carry two lists on one slide */
-.tight li { margin-bottom: 5px; }
+.tight li { margin-bottom: 3px; }
 .brick.compact h3 { margin-bottom: 4px; }
 
 .plain li { padding-left: 20px; }
@@ -346,7 +350,7 @@
 
 .badge-n {
   font-family: var(--font-pixel);
-  font-size: 13px;
+  font-size: 14px;
   background: var(--ink);
   color: #fff;
   padding: 8px 10px;
@@ -408,7 +412,7 @@
 .slidev-layout .cmp table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15.5px;
+  font-size: 17px;
 }
 
 .slidev-layout .cmp th,
@@ -424,7 +428,7 @@
   color: #fff;
   font-family: var(--font-body);
   font-weight: 800;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .slidev-layout .cmp tbody tr > *:first-child {
@@ -439,7 +443,7 @@
   display: inline-block;
   padding: 2px 7px;
   border: 2px solid var(--ink);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -455,7 +459,7 @@
   border-right: 3px solid var(--ink);
   border-bottom: 3px solid var(--ink);
   padding: 14px 18px;
-  font-size: 18px;
+  font-size: var(--fs-body);
   line-height: 1.55;
   box-shadow: 0 5px 0 rgba(26, 26, 26, 0.18);
 }
@@ -482,7 +486,7 @@
   border: 3px solid var(--ink);
   background: var(--paper);
   padding: 11px 14px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   box-shadow: 0 5px 0 rgba(26, 26, 26, 0.22);
 }
@@ -557,7 +561,7 @@
 
 .brick.thanks p {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 17px;
+  font-size: var(--fs-body);
 }
 
 /* ---------- prose inside a slide body ----------
@@ -566,7 +570,7 @@
 .stack > p,
 .body > div > p {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--ink-soft);
 }
@@ -594,7 +598,7 @@
   background: var(--paper-muted);
   box-shadow: 0 5px 0 rgba(26, 26, 26, 0.18);
   padding: 20px 24px;
-  font-size: 17px;
+  font-size: var(--fs-body);
   line-height: 1.75;
   color: var(--ink-soft);
 }
@@ -644,7 +648,7 @@
 
 .qr-card .url {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink);
   text-align: center;
   word-break: break-all;
@@ -652,7 +656,7 @@
 
 /* the self-intro list carries only a few lines, so let it breathe */
 .intro li {
-  font-size: 21px;
+  font-size: var(--fs-body);
   margin-bottom: 18px;
 }
 

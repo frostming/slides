@@ -584,7 +584,7 @@ mermaid = "mdlite_mermaid:render"
 
 </Code>
 
-<ul class="plain small">
+<ul class="plain small tight">
 <li><code>mdlite.fence_renderer</code> Entrypoint 组名</li>
 <li><code>mermaid</code> Entrypoint 组内唯一标识符</li>
 <li><code>mdlite_mermaid:render</code> 插件模块和函数</li>
@@ -766,7 +766,7 @@ html = pm.hook.render_fence(lang=lang, code=code)
 
 </Code>
 
-<Brick color="purple" class="compact" style="padding-top: 14px; padding-bottom: 14px">
+<Brick color="purple" class="compact" style="padding-top: 7px; padding-bottom: 7px">
 
 ### 它多做了什么
 
@@ -778,13 +778,13 @@ html = pm.hook.render_fence(lang=lang, code=code)
 
 </Brick>
 
-<Brick color="red" class="compact" style="padding-top: 14px; padding-bottom: 14px">
+<Brick color="red" class="compact" style="padding-top: 7px; padding-bottom: 7px">
 
 ### 代价：类型提示帮不上忙
 
 <ul class="bad small tight" style="margin-top: 2px">
 <li><code>pm.hook.xxx()</code> 是动态属性，返回 <code>Any</code></li>
-<li>hookspec 与 hookimpl 之间没有静态关联，签名错了要等运行时</li>
+<li>hookspec 与 hookimpl 无静态关联，签名错了等运行时</li>
 <li>IDE 跳不到实现，改签名只能靠全文搜索</li>
 </ul>
 
