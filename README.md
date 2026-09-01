@@ -39,11 +39,10 @@ visit <http://localhost:3030>
 
 Edit the `<your talk folder>/src/slides.md` to see the changes.
 
-Hand-written decks that are not built by Slidev live in `static/<slug>/index.html`.
-They are copied verbatim to `dist/<slug>/` at build time, so they get the same
-`https://slides.fming.dev/<slug>/` URL and are listed in the catalogue too.
-
-Learn more about Slidev at the [documentation](https://sli.dev/).
+Hand-written decks that are not built by Slidev can live in
+`static/<slug>/index.html`; they are copied verbatim to `dist/<slug>/` at build
+time, so they get the same `https://slides.fming.dev/<slug>/` URL and appear in
+the catalogue too.
 
 ### Build
 
