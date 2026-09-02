@@ -80,9 +80,11 @@
   font-size: 13px;
   letter-spacing: 1px;
   white-space: pre;
-  text-shadow:
-    1px 1px 0 var(--ink), -1px 1px 0 var(--ink),
-    1px -1px 0 var(--ink), -1px -1px 0 var(--ink);
+  /* a real stroke, not stacked shadows: each text-shadow layer becomes its
+     own text object in an exported PDF, so the wordmark appeared five times
+     over in the text layer */
+  -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke fill;
 }
 
 .conf-theme {
@@ -91,7 +93,6 @@
   letter-spacing: 0.5px;
   color: #fff;
   margin-top: 3px;
-  text-shadow: 1px 1px 0 rgba(26, 26, 26, 0.55);
 }
 
 /* the white stage; the accent rule under the black one identifies the slide */
@@ -116,7 +117,6 @@
   font-size: 9px;
   letter-spacing: 0.5px;
   color: #fff;
-  text-shadow: 1px 1px 0 rgba(26, 26, 26, 0.5);
 }
 
 /* accent colour per slide, set via frontmatter `class: accent-red` */
@@ -694,4 +694,11 @@
   font-size: 22px;
   color: var(--ink-soft);
   margin: 0;
+}
+
+/* the standard "my own views" note on the closing slide */
+.brick.thanks .disclaimer {
+  margin-top: 10px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.55);
 }

@@ -839,4 +839,5 @@ register / provider 让宿主知道插件的存在。
 <div class="brick thanks">
   <div class="px">THANKS &amp; Q&amp;A</div>
   <p>Python 包的插件系统设计 · PyCon China 2026 · Frost Ming</p>
+  <p class="disclaimer">本次分享的观点仅代表个人立场，与现在或过往雇主无关。</p>
 </div>
