@@ -352,15 +352,23 @@ layout: brick
 accent: indigo
 ---
 
-## Framework 和 Library
+## Library、Framework 和 Application
 
-<div class="fill">
+<div class="fill framework-spectrum">
 
 > 要区分一个东西是框架还是库，关键在于找到“谁控制着程序的整体结构？” 这个问题的答案。使用框架，控制权牢牢掌握在框架手中，你所编写的程序，是镶嵌在伟岸的框架程序中的一部分。这有点像是去完成一副卡通图，所有元素都已用浅灰色线条勾边，你只负责给不同部位涂上不同颜色。
 >
 > 而使用库，控制权则仍掌握在你手里。你负责调配和使用不同的库，来搭建起整个程序。这像是玩积木，手边有千千万万个积木和模组，你负责把它们组装成想要的样子。
 >
 > ——Piglei《AI 编程是一种“框架”》
+
+<LibraryFrameworkSlider />
+
+<div class="application-summary">
+  <span><strong>Application：</strong>通常由库或框架组成，用户只使用，不接触代码实现。</span>
+  <code>uvx foo-cli</code>
+  <code>uvicorn myapp.wsgi:application</code>
+</div>
 
 <Callout>
 
@@ -410,48 +418,6 @@ MIDDLEWARE = [
     ...
     'myapp.middleware.MyMiddleware',
 ]
-```
-
-</Code>
-
-</div>
-</div>
-
-</div>
-
----
-layout: brick
-accent: purple
----
-
-## 应用
-
-<div class="fill">
-
-<p class="lead">应用通常由库或框架组成，用户只使用，不接触代码实现。</p>
-
-<div class="cols">
-<div class="stack">
-
-<p>CLI:</p>
-
-<Code>
-
-```bash
-uvx foo-cli
-```
-
-</Code>
-
-</div>
-<div class="stack">
-
-<p>Web:</p>
-
-<Code>
-
-```bash
-uvicorn myapp.wsgi:application
 ```
 
 </Code>
@@ -638,6 +604,68 @@ mdlite document.md  # 支持 mermaid 语法
 
 ---
 layout: brick
+accent: orange
+---
+
+## 独占型扩展：默认代码高亮器
+
+<div class="fill">
+
+<p class="lead"><code>mermaid</code> 等按语言注册；普通代码块共用一个默认高亮器。</p>
+
+<div class="cols-6-4">
+<div class="stack">
+
+<Code cap="mdlite/core.py">
+
+```py
+class Renderer:
+    def __init__(self):
+        self._fence_renderers = {}
+        self.default_fence_renderer = render_plain_fence
+
+    def render_fence(self, lang: str, code: str) -> str:
+        if lang in self._fence_renderers:
+            return self._fence_renderers[lang](code)
+        return self.default_fence_renderer(lang, code)
+```
+
+</Code>
+
+<Code cap="mdlite/__main__.py">
+
+```py
+for entry_point in importlib.metadata.entry_points(
+        group="mdlite.default_fence_renderer"):
+    renderer.default_fence_renderer = entry_point.load()
+```
+
+</Code>
+
+</div>
+<div class="stack">
+
+<div class="lane">
+  <Node color="b"><strong>默认实现</strong><br><code>render_plain_fence</code></Node>
+  <FlowArrow down />
+  <Node color="p"><strong>先加载</strong><br><code>mdlite_pygments:render</code></Node>
+  <FlowArrow down />
+  <Node color="r"><strong>后加载 · 最终生效</strong><br><code>mdlite_shiki:render</code></Node>
+</div>
+
+</div>
+</div>
+
+<Callout>
+
+**后到先得。** 同时安装 Pygments 和 Shiki 扩展时，后加载的默认高亮器生效；如果结果必须可预测，就要显式定义加载顺序或优先级。
+
+</Callout>
+
+</div>
+
+---
+layout: brick
 accent: green
 ---
 
@@ -657,13 +685,16 @@ accent: green
 
 ```toml
 [project]
-name = "mdlite-mermaid"
+name = "mdlite-rich"
 
 [project.entry-points."mdlite.fence_renderer"]
-mermaid = "mdlite_mermaid:render"
+mermaid = "mdlite_rich:render_mermaid"
 
 [project.entry-points."mdlite.block_renderer"]
-mermaid = "mdlite_mermaid:block_render"
+mermaid = "mdlite_rich:render_mermaid_block"
+
+[project.entry-points."mdlite.default_fence_renderer"]
+pygments = "mdlite_rich:render_code"
 ```
 
 </Code>
@@ -681,21 +712,23 @@ mermaid = "mdlite_mermaid:block_render"
 
 ```toml
 [project]
-name = "mdlite-mermaid"
+name = "mdlite-rich"
 
 [project.entry-points."mdlite.plugin"]
-mermaid = "mdlite_mermaid:plugin"
+rich = "mdlite_rich:plugin"
 ```
 
 </Code>
 
-<Code cap="mdlite_mermaid.py">
+<Code cap="mdlite_rich.py">
 
 ```py
 def plugin(renderer):
-    renderer.register_fence_renderer("mermaid", render)
+    renderer.register_fence_renderer(
+        "mermaid", render_mermaid)
     renderer.register_block_renderer(
-        "mermaid", block_render)
+        "mermaid", render_mermaid_block)
+    renderer.default_fence_renderer = render_code
 ```
 
 </Code>
@@ -805,32 +838,32 @@ accent: yellow
 <div class="stack">
 <Takeaway n="1">
 
-<b style="font-size: 20px">Monkeypatch 能工作，但没有契约。</b>
+<b style="font-size: 20px">Monkeypatch 能工作，但插件系统需要契约。</b>
 
-依赖内部实现、顺序敏感、难以调试。
+把可替换的位置显式设计成 provider、register 或赋值接口。
 
 </Takeaway>
 <Takeaway n="2">
 
-<b style="font-size: 20px">先把扩展点变成数据。</b>
+<b style="font-size: 20px">先区分扩展点的基数。</b>
 
-register / provider 让宿主知道插件的存在。
+注册型允许多个实现共存；独占型赋值覆盖，加载顺序就是冲突策略。
 
 </Takeaway>
 </div>
 <div class="stack">
 <Takeaway n="3">
 
-<b style="font-size: 20px">库与框架的区别是控制权在谁手里。</b>
+<b style="font-size: 20px">从 Library 到 Application，控制权逐步交给宿主。</b>
 
-应用要让插件不用主动注册，只做自己的事。
+宿主负责发现、加载和装配；插件只需要实现约定。
 
 </Takeaway>
 <Takeaway n="4">
 
-<b style="font-size: 20px">Entrypoint 让 pip install 即生效。</b>
+<b style="font-size: 20px">插件发现和插件调用是两个层次。</b>
 
-扩展点多了就收敛成一个统一入口；需要多实现聚合时再上 pluggy。
+Entry Point 负责发现，统一入口负责装配；需要聚合与排序时再使用 pluggy。
 
 </Takeaway>
 </div>

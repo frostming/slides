@@ -198,6 +198,50 @@
   gap: 18px;
 }
 
+.framework-spectrum {
+  gap: 12px;
+}
+
+.framework-spectrum blockquote {
+  padding: 14px 18px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.framework-spectrum blockquote p {
+  margin-bottom: 8px;
+}
+
+.framework-spectrum .callout {
+  padding-block: 10px;
+}
+
+.application-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-left: 8px solid var(--py-purple);
+  background: var(--paper-muted);
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.application-summary > span {
+  flex: 1;
+}
+
+.application-summary code {
+  flex: none;
+  padding: 3px 6px;
+  border: 1px solid #cfe6db;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+}
+
 /* inside a .fill the tracks size to their content rather than stretching */
 .fill > .cols,
 .fill > .cols3,
