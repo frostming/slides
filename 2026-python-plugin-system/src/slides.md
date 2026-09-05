@@ -67,12 +67,11 @@ layout: brick
 <Code cap="example.md">
 
 ````md
-# Architecture
+# Hello, world!
 
-~~~mermaid
-flowchart LR
-    Markdown --> HTML
-~~~
+```python
+print("Hello from Markdown!")
+```
 ````
 
 </Code>
