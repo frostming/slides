@@ -61,7 +61,24 @@ layout: brick
 ## 问题：如何扩展 Python 库？
 
 <div class="fill">
-<div class="solo">
+<div class="cols-4-6" style="align-items: center">
+<div class="stack">
+
+<Code cap="example.md">
+
+````md
+# Architecture
+
+~~~mermaid
+flowchart LR
+    Markdown --> HTML
+~~~
+````
+
+</Code>
+
+</div>
+<div class="stack">
 
 <Code cap="mdlite.py">
 
@@ -81,6 +98,7 @@ def render_fence(lang: str, code: str) -> str:
 
 </Code>
 
+</div>
 </div>
 </div>
 
