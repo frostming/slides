@@ -69,9 +69,9 @@ layout: brick
 ````md
 # Hello, world!
 
-```python
+~~~python
 print("Hello from Markdown!")
-```
+~~~
 ````
 
 </Code>
